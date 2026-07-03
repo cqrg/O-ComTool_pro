@@ -13,7 +13,7 @@ namespace O_ComTool_Pro
     public partial class Update : Form
     {
         string update_url = "";
-        string server_url = "https://www.ifreehub.com/octservice/";
+        string server_url = "https://raw.githubusercontent.com/cqrg/O-ComTool_pro/main/update/";
 
         UpdateHelper.check_value ret_update;
 

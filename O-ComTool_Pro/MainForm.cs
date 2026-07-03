@@ -21,7 +21,7 @@ namespace O_ComTool_Pro
 {
     public partial class MainForm : Form, Modbus.IModbusTransport
     {
-        string server_url = "https://www.ifreehub.com/octservice"; // 服务器地址，用于检查更新
+        string server_url = "https://raw.githubusercontent.com/cqrg/O-ComTool_pro/main/update"; // 服务器地址(自托管 raw)，用于检查更新
 
         // ---- Modbus RTU ----
         private Modbus.ModbusReceiveAggregator _modbusAggregator;

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O-ComTool 自托管更新清单。由 UpdateHelper.check_update 通过 raw URL 拉取。
+     发布新版本时：把 <version> 改为新版本号(取主.次.修订 前5字符,如 2.2.0)，
+     <link> 指向该版本下载地址，<feature> 写更新说明。 -->
+<checkupdate>
+  <version>2.1.1</version>
+  <link>https://github.com/cqrg/O-ComTool_pro/releases</link>
+  <feature>O-ComTool v2.1.1 —— 移植 Modbus RTU 主机 / WebView2+ECharts 实时图表 / 自动校验 / Ctrl+Enter 发送 / .NET 4.8。详见 GitHub Releases。</feature>
+</checkupdate>
