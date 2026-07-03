@@ -1354,13 +1354,7 @@ namespace O_ComTool_Pro
             }
         }
 
-        byte RightKeyCheckSum(byte[] buffer, int length)
-        {
-            byte CS = 0;
-            for (int i = 0; i < length; i++)
-                CS += buffer[i];
-            return CS;
-        }
+        byte RightKeyCheckSum(byte[] buffer, int length) { return CrcUtil.Sum(buffer, length); }
 
         private void cmsCheckSum_Click(object sender, EventArgs e)
         {
@@ -1369,13 +1363,8 @@ namespace O_ComTool_Pro
             MessageBox.Show("校验和：0x" + RightKeyCheckSum(bytesToCheck, bytesToCheck.Length).ToString("X2"), "O-ComTool 校验和", MessageBoxButtons.OK, MessageBoxIcon.None);
         }
 
-        byte RightKeyXOR(byte[] buffer, int length)
-        {
-            byte xor = 0;
-            for (int i = 0; i < length; i++)
-                xor ^= buffer[i];
-            return xor;
-        }
+        byte RightKeyXOR(byte[] buffer, int length) { return CrcUtil.Xor(buffer, length); }
+
         private void cmsXor_Click(object sender, EventArgs e)
         {
             string selectText = ((FastColoredTextBox)contextMenuStrip2.SourceControl).SelectedText;

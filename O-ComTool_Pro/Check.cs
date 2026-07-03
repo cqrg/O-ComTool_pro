@@ -19,73 +19,16 @@ namespace O_ComTool_Pro
             cmbWaySelect.SelectedIndex = 0;
         }
 
-        byte CheckSum(byte[] buffer, uint length)
-        {
-            byte CS = 0;
-            for (uint i = 0; i < length; i++)
-                CS += buffer[i];
-            return CS;
-        }
+        byte CheckSum(byte[] buffer, uint length) { return CrcUtil.Sum(buffer, (int)length); }
 
-        byte XOR(byte[] buffer, uint length)
-        {
-            byte xor = 0;
-            for (uint i = 0; i < length; i++)
-                xor ^= buffer[i];
-            return xor;
-        }
+        byte XOR(byte[] buffer, uint length) { return CrcUtil.Xor(buffer, (int)length); }
 
-        public uint crc16_modbus(byte[] modbusdata, uint length)
-        {
-            uint i, j;
-            uint crc16 = 0xffff;
-            for (i = 0; i < length; i++)
-            {
-                crc16 ^= modbusdata[i];
-                for (j = 0; j < 8; j++)
-                {
-                    if ((crc16 & 0x01) == 1)
-                    {
-                        crc16 = (crc16 >> 1) ^ 0xA001;
-                    }
-                    else
-                    {
-                        crc16 = crc16 >> 1;
-                    }
-                }
-            }
-            return crc16;
-        }
+        public uint crc16_modbus(byte[] modbusdata, uint length) { return CrcUtil.Crc16Modbus(modbusdata, (int)length); }
 
         ulong[] Crc32Table = new ulong[256];
-        public void GetCRC32Table()
-        {
-            ulong Crc;
-            int i, j;
-            for (i = 0; i < 256; i++)
-            {
-                Crc = (ulong)i;
-                for (j = 8; j > 0; j--)
-                {
-                    if ((Crc & 1) == 1)
-                        Crc = (Crc >> 1) ^ 0xEDB88320;
-                    else
-                        Crc >>= 1;
-                }
-                Crc32Table[i] = Crc;
-            }
-        }
+        public void GetCRC32Table() { /* 保留空实现以兼容旧调用；CRC32 表已由 CrcUtil 内部懒加载 */ }
 
-        ulong crc32_calc(byte[] data, uint len)
-        {
-            ulong value = 0xffffffff;
-            GetCRC32Table();
-            for (int i = 0; i < len; i++)
-            {
-                value = (value >> 8) ^ Crc32Table[(value & 0xFF) ^ data[i]];
-            }
-            return value ^ 0xffffffff;
-        }
+        ulong crc32_calc(byte[] data, uint len) { return CrcUtil.Crc32(data, (int)len); }
 
         private void btnCheck_Click(object sender, EventArgs e)
         {
