@@ -505,31 +505,46 @@ namespace O_ComTool_Pro
         private Form _modbusForm;
         private Form _chartForm;
 
-        private void tsmModbus_Click(object sender, EventArgs e) { ShowToolForm(ref _modbusForm, "Modbus RTU 主机", _modbusPanel, 800, 420); }
+        private void tsmModbus_Click(object sender, EventArgs e) { ShowToolForm(ref _modbusForm, "Modbus RTU 主机", _modbusPanel, 820, 520); }
         private void tsmChart_Click(object sender, EventArgs e) { ShowToolForm(ref _chartForm, "实时图表", _chartPanel, 800, 460); }
 
-        /// <summary>把一个 UserControl 宿主到独立的非模态子窗口；关闭时隐藏而非释放，保留面板状态。</summary>
+        /// <summary>把一个 UserControl 宿主到独立的非模态子窗口；用户点 X 仅隐藏，应用退出/关机时正常关闭。</summary>
         private void ShowToolForm(ref Form form, string title, Control panel, int w, int h)
         {
-            Form f = form;
-            if (f == null || f.IsDisposed)
+            try
             {
-                f = new Form
+                Form f = form;
+                if (f == null || f.IsDisposed)
                 {
-                    Text = title,
-                    Width = w,
-                    Height = h,
-                    StartPosition = FormStartPosition.CenterParent,
-                    ShowInTaskbar = false,
-                    Owner = this
-                };
-                f.FormClosing += (s, ev) => { ev.Cancel = true; f.Hide(); };
-                panel.Dock = DockStyle.Fill;
-                if (panel.Parent == null) f.Controls.Add(panel);
-                form = f;
+                    f = new Form
+                    {
+                        Text = title,
+                        Width = w,
+                        Height = h,
+                        StartPosition = FormStartPosition.CenterParent,
+                        ShowInTaskbar = false,
+                        Owner = this
+                    };
+                    f.FormClosing += (s, ev) =>
+                    {
+                        // 仅用户主动点 X 时隐藏(保留面板状态)；应用退出/系统关机等放行
+                        if (ev.CloseReason == CloseReason.UserClosing)
+                        {
+                            ev.Cancel = true;
+                            f.Hide();
+                        }
+                    };
+                    panel.Dock = DockStyle.Fill;
+                    if (panel.Parent == null) f.Controls.Add(panel);
+                    form = f;
+                }
+                f.Show();
+                f.BringToFront();
             }
-            f.Show();
-            f.BringToFront();
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "打开" + title + "失败：\n\n" + ex, "O-ComTool 错误", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         private void ModbusResponse_ForChart(Modbus.ModbusResponse r)
@@ -1460,10 +1475,23 @@ namespace O_ComTool_Pro
                     if (log_sw != null) { log_sw.Dispose(); log_sw = null; }
                     log_fs = null;
                 }
-                
+
+                // 释放 Modbus/图表 子窗口及其内部控件(含 WebView2)，避免进程残留
+                DisposeToolForm(ref _modbusForm);
+                DisposeToolForm(ref _chartForm);
+                if (_modbusAggregator != null) { _modbusAggregator.Dispose(); _modbusAggregator = null; }
+
                 notifyIcon1.Dispose();
 
             }
+        }
+
+        private static void DisposeToolForm(ref Form f)
+        {
+            if (f == null) return;
+            try { if (!f.IsDisposed) f.Dispose(); }
+            catch { }
+            f = null;
         }
 
         private void tsmExit_Click(object sender, EventArgs e)

@@ -222,8 +222,6 @@
             this.gpdSend.Controls.Add(this.label10);
             this.gpdSend.Controls.Add(this.nudRepeatInterval);
             this.gpdSend.Controls.Add(this.chkAutoCount);
-            this.gpdSend.Controls.Add(this.chkAppendCheck);
-            this.gpdSend.Controls.Add(this.cmbCheckAlg);
             this.gpdSend.Controls.Add(this.radHexSend);
             this.gpdSend.Controls.Add(this.radAsciiSend);
             this.gpdSend.Cursor = System.Windows.Forms.Cursors.Arrow;
@@ -319,16 +317,18 @@
             //
             // chkAppendCheck
             //
+            this.chkAppendCheck.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.chkAppendCheck.AutoSize = true;
-            this.chkAppendCheck.Location = new System.Drawing.Point(9, 128);
+            this.chkAppendCheck.Location = new System.Drawing.Point(556, 46);
             this.chkAppendCheck.Name = "chkAppendCheck";
-            this.chkAppendCheck.Size = new System.Drawing.Size(36, 16);
+            this.chkAppendCheck.Size = new System.Drawing.Size(72, 16);
             this.chkAppendCheck.TabIndex = 10;
-            this.chkAppendCheck.Text = "校验";
+            this.chkAppendCheck.Text = "追加校验";
             this.chkAppendCheck.UseVisualStyleBackColor = true;
             //
             // cmbCheckAlg
             //
+            this.cmbCheckAlg.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbCheckAlg.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbCheckAlg.FormattingEnabled = true;
             this.cmbCheckAlg.Items.AddRange(new object[] {
@@ -338,7 +338,7 @@
             "CRC16-Modbus",
             "CRC32",
             "FCS"});
-            this.cmbCheckAlg.Location = new System.Drawing.Point(45, 126);
+            this.cmbCheckAlg.Location = new System.Drawing.Point(556, 68);
             this.cmbCheckAlg.Name = "cmbCheckAlg";
             this.cmbCheckAlg.Size = new System.Drawing.Size(75, 22);
             this.cmbCheckAlg.TabIndex = 11;
@@ -925,6 +925,8 @@
             // 
             this.tbpGeneral.Controls.Add(this.btnSend);
             this.tbpGeneral.Controls.Add(this.txbSend);
+            this.tbpGeneral.Controls.Add(this.chkAppendCheck);
+            this.tbpGeneral.Controls.Add(this.cmbCheckAlg);
             this.tbpGeneral.Controls.Add(this.btnEditFile);
             this.tbpGeneral.Controls.Add(this.btnLoadFile);
             this.tbpGeneral.Controls.Add(this.cmbLoadFile);
@@ -938,11 +940,11 @@
             // 
             // btnSend
             // 
-            this.btnSend.Anchor = System.Windows.Forms.AnchorStyles.Right;
+            this.btnSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSend.Font = new System.Drawing.Font("黑体", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
-            this.btnSend.Location = new System.Drawing.Point(556, 24);
+            this.btnSend.Location = new System.Drawing.Point(556, 3);
             this.btnSend.Name = "btnSend";
-            this.btnSend.Size = new System.Drawing.Size(75, 52);
+            this.btnSend.Size = new System.Drawing.Size(75, 40);
             this.btnSend.TabIndex = 18;
             this.btnSend.Text = "发送";
             this.btnSend.UseVisualStyleBackColor = true;

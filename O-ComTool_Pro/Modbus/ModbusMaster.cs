@@ -80,6 +80,9 @@ namespace O_ComTool_Pro.Modbus
                 r.Error = "帧过短";
                 return r;
             }
+            // 保留原始帧字节，供回显
+            r.RawFrame = new byte[length];
+            Array.Copy(frame, 0, r.RawFrame, 0, length);
             // 校验 CRC（最后两字节，小端）
             if (!CheckCrc(frame, length))
             {
@@ -188,6 +191,7 @@ namespace O_ComTool_Pro.Modbus
         public byte Fc;
         public bool IsException;
         public byte ExceptionCode;
+        public byte[] RawFrame;       // 原始响应帧字节(含 CRC)，供回显
         public byte[] Data;            // 数据载荷（读响应的原始字节）
         public ushort[] RegisterValues; // FC03/04 解析出的寄存器值（大端）
         public bool[] Coils;            // FC01/02 解析出的线圈/离散量

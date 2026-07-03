@@ -22,7 +22,21 @@ namespace O_ComTool_Pro.Modbus
         private DataGridView dgvResult;
         private Label lblStatus;
         private Label lblWriteHint;
+        private TextBox txbRaw;
+        private Button btnClearRaw;
         private readonly Timer _pollTimer = new Timer();
+
+        // ---- 地址扫描 ----
+        private NumericUpDown nudScanStart;
+        private NumericUpDown nudScanEnd;
+        private Button btnScan;
+        private readonly Timer _scanStepTimer = new Timer();
+        private bool _scanning;
+        private bool _scanStepDone;
+        private int _scanIdx;
+        private int _scanExpectSlave;
+        private int _scanPerAddrMs = 300;
+        private System.Collections.Generic.List<int> _scanRange;
 
         private IModbusTransport _transport;
 
@@ -42,6 +56,7 @@ namespace O_ComTool_Pro.Modbus
         {
             InitializeComponentLite();
             _pollTimer.Tick += PollTimer_Tick;
+            _scanStepTimer.Tick += ScanStepTimer_Tick;
         }
 
         /// <summary>绑定传输层并订阅响应。MainForm 在创建面板后调用。</summary>
@@ -68,7 +83,12 @@ namespace O_ComTool_Pro.Modbus
             if (IsDisposed || !IsHandleCreated) return;
             try
             {
-                this.BeginInvoke((Action)(() => ShowResponse(r)));
+                this.BeginInvoke((Action)(() =>
+                {
+                    if (r != null && r.RawFrame != null) AppendRaw(false, r.RawFrame);
+                    if (_scanning) OnScanResponse(r);
+                    else ShowResponse(r);
+                }));
             }
             catch (InvalidOperationException) { }
         }
@@ -108,6 +128,27 @@ namespace O_ComTool_Pro.Modbus
         }
 
         private bool IsReadFc(byte fc) { return fc == 0x01 || fc == 0x02 || fc == 0x03 || fc == 0x04; }
+
+        /// <summary>向"原始回显"追加一行 TX/RX 的 hex。</summary>
+        private void AppendRaw(bool isTx, byte[] data)
+        {
+            if (txbRaw == null || data == null || data.Length == 0) return;
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.Append(isTx ? "TX " : "RX ");
+            sb.Append(DateTime.Now.ToString("HH:mm:ss.fff"));
+            sb.Append("  ");
+            for (int i = 0; i < data.Length; i++)
+            {
+                sb.Append(data[i].ToString("X2"));
+                sb.Append(' ');
+            }
+            sb.Append("\r\n");
+            // 限制回显长度，避免无限增长
+            if (txbRaw.TextLength > 20000) txbRaw.Clear();
+            txbRaw.AppendText(sb.ToString());
+            txbRaw.SelectionStart = txbRaw.TextLength;
+            txbRaw.ScrollToCaret();
+        }
 
         private void btnSend_Click(object sender, EventArgs e) { SendOnce(); }
 
@@ -149,6 +190,7 @@ namespace O_ComTool_Pro.Modbus
 
             lblStatus.Text = "状态：发送 " + frame.Length + " 字节...";
             lblStatus.ForeColor = Color.DimGray;
+            AppendRaw(true, frame);
             _transport.Send(frame, fc);
         }
 
@@ -224,6 +266,114 @@ namespace O_ComTool_Pro.Modbus
             lblStatus.Text = chkModbusMode.Checked ? "状态：Modbus 模式已开启" : "状态：Modbus 模式已关闭";
         }
 
+        // ---- 地址扫描 ----
+        // 逐个从机地址发送读探测(FC03/或所选读 FC)，根据响应/超时列出在线从机。
+        private void btnScan_Click(object sender, EventArgs e)
+        {
+            if (_scanning) { StopScan("扫描已停止"); return; }
+            StartScan();
+        }
+
+        private void StartScan()
+        {
+            if (_transport == null || !_transport.IsOpen)
+            {
+                lblStatus.Text = "状态：请先打开串口";
+                lblStatus.ForeColor = Color.Red;
+                return;
+            }
+            int lo = (int)nudScanStart.Value;
+            int hi = (int)nudScanEnd.Value;
+            if (hi < lo) { int t = lo; lo = hi; hi = t; }
+            _scanRange = new System.Collections.Generic.List<int>();
+            for (int a = lo; a <= hi; a++) _scanRange.Add(a);
+            if (_scanRange.Count > 247) { lblStatus.Text = "状态：范围过大(1-247)"; return; }
+
+            // 自动进入 Modbus 模式
+            if (!chkModbusMode.Checked) chkModbusMode.Checked = true;
+            _scanning = true;
+            _scanIdx = 0;
+            btnScan.Text = "停止";
+            btnSend.Enabled = false;
+            dgvResult.Rows.Clear();
+            dgvResult.Columns[0].HeaderText = "地址";
+            dgvResult.Columns[1].HeaderText = "状态";
+            dgvResult.Columns[2].HeaderText = "详情";
+            lblStatus.Text = "状态：扫描中 0/" + _scanRange.Count;
+            lblStatus.ForeColor = Color.DimGray;
+            ScanStep();
+        }
+
+        private void StopScan(string msg)
+        {
+            _scanning = false;
+            _scanStepTimer.Stop();
+            btnScan.Text = "扫描";
+            btnSend.Enabled = true;
+            dgvResult.Columns[0].HeaderText = "序号";
+            dgvResult.Columns[1].HeaderText = "HEX";
+            dgvResult.Columns[2].HeaderText = "DEC/状态";
+            lblStatus.Text = "状态：" + msg + "，发现 " + CountOnline() + " 个在线从机";
+            lblStatus.ForeColor = Color.Green;
+        }
+
+        private int CountOnline()
+        {
+            int n = 0;
+            foreach (DataGridViewRow row in dgvResult.Rows)
+                if (Convert.ToString(row.Cells[1].Value) == "在线") n++;
+            return n;
+        }
+
+        private void ScanStep()
+        {
+            if (!_scanning) return;
+            if (_scanIdx >= _scanRange.Count) { StopScan("扫描完成"); return; }
+            _scanExpectSlave = _scanRange[_scanIdx];
+            _scanStepDone = false;
+            // 用所选读 FC(否则默认 03)，addr/qty 取当前输入；写为只读探测
+            byte fc = SelectedFc();
+            if (!IsReadFc(fc)) fc = ModbusMaster.FC_READ_HOLDING;
+            ushort addr = (ushort)nudAddr.Value;
+            ushort qty = (fc == ModbusMaster.FC_READ_COILS || fc == ModbusMaster.FC_READ_DISCRETE) ? (ushort)1 : (ushort)Math.Min((int)nudQty.Value, 1);
+            byte[] frame = ModbusMaster.BuildRead((byte)_scanExpectSlave, fc, addr, qty);
+            lblStatus.Text = "状态：扫描 " + _scanExpectSlave + " (" + (_scanIdx + 1) + "/" + _scanRange.Count + ")";
+            AppendRaw(true, frame);
+            _transport.Send(frame, fc);
+            _scanStepTimer.Interval = _scanPerAddrMs;
+            _scanStepTimer.Start();
+        }
+
+        private void ScanStepTimer_Tick(object sender, EventArgs e)
+        {
+            _scanStepTimer.Stop();
+            if (!_scanning || _scanStepDone) return;
+            _scanStepDone = true;
+            // 无响应：不进列表，直接探测下一个地址
+            AdvanceScan();
+        }
+
+        private void OnScanResponse(ModbusResponse r)
+        {
+            if (_scanStepDone) return;
+            _scanStepDone = true;
+            _scanStepTimer.Stop();
+            if (r.Slave == _scanExpectSlave)
+            {
+                if (r.IsException)
+                    dgvResult.Rows.Add(_scanExpectSlave, "在线", "异常 0x" + r.ExceptionCode.ToString("X2"));
+                else
+                    dgvResult.Rows.Add(_scanExpectSlave, "在线", "OK FC 0x" + r.Fc.ToString("X2"));
+            }
+            AdvanceScan();
+        }
+
+        private void AdvanceScan()
+        {
+            _scanIdx++;
+            ScanStep();
+        }
+
         private void InitializeComponentLite()
         {
             this.SuspendLayout();
@@ -267,24 +417,52 @@ namespace O_ComTool_Pro.Modbus
             chkModbusMode = new CheckBox { Text = "Modbus 解析模式", Location = new Point(200, 70), Size = new Size(140, 20), Font = f };
             Controls.Add(chkModbusMode);
 
+            // 地址扫描行（与轮询/解析模式同处一行，靠右）
+            Controls.Add(L("扫描从机", 350, 72, 56));
+            nudScanStart = new NumericUpDown { Location = new Point(408, 70), Size = new Size(40, 22), Minimum = 1, Maximum = 247, Value = 1, Font = f };
+            Controls.Add(nudScanStart);
+            Controls.Add(L("-", 450, 72, 10));
+            nudScanEnd = new NumericUpDown { Location = new Point(462, 70), Size = new Size(40, 22), Minimum = 1, Maximum = 247, Value = 20, Font = f };
+            Controls.Add(nudScanEnd);
+            btnScan = new Button { Text = "扫描", Location = new Point(508, 69), Size = new Size(56, 24), Font = f };
+            Controls.Add(btnScan);
+
             dgvResult = new DataGridView
             {
                 Location = new Point(8, 100),
-                Size = new Size(740, 180),
+                Size = new Size(740, 150),
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 ReadOnly = true,
                 RowHeadersVisible = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 Font = f,
-                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             dgvResult.Columns.Add("cIdx", "序号");
             dgvResult.Columns.Add("cHex", "HEX");
             dgvResult.Columns.Add("cDec", "DEC/状态");
             Controls.Add(dgvResult);
 
-            lblStatus = new Label { Location = new Point(8, 286), Size = new Size(740, 20), Font = f, Text = "状态：就绪", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            // 原始字节回显(TX/RX)
+            Label lblRawCap = new Label { Location = new Point(8, 256), Size = new Size(60, 18), Font = f, Text = "原始回显", Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            Controls.Add(lblRawCap);
+            btnClearRaw = new Button { Text = "清空", Location = new Point(68, 253), Size = new Size(56, 22), Font = f, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            btnClearRaw.Click += (s, ev) => txbRaw.Clear();
+            Controls.Add(btnClearRaw);
+            txbRaw = new TextBox
+            {
+                Location = new Point(8, 278),
+                Size = new Size(740, 140),
+                Multiline = true,
+                ScrollBars = ScrollBars.Vertical,
+                ReadOnly = true,
+                Font = new Font("Consolas", 9F),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+            };
+            Controls.Add(txbRaw);
+
+            lblStatus = new Label { Location = new Point(8, 426), Size = new Size(740, 18), Font = f, Text = "状态：就绪", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             Controls.Add(lblStatus);
 
             // 事件
@@ -292,12 +470,13 @@ namespace O_ComTool_Pro.Modbus
             chkPoll.CheckedChanged += chkPoll_CheckedChanged;
             cmbFunction.SelectedIndexChanged += cmbFunction_SelectedIndexChanged;
             chkModbusMode.CheckedChanged += chkModbusMode_CheckedChanged;
+            btnScan.Click += btnScan_Click;
             cmbFunction_SelectedIndexChanged(null, null);
 
             this.AutoScaleDimensions = new SizeF(6F, 12F);
             this.AutoScaleMode = AutoScaleMode.Font;
             this.BackColor = Color.White;
-            this.Size = new Size(756, 312);
+            this.Size = new Size(760, 460);
             this.ResumeLayout(false);
         }
     }
