@@ -27,6 +27,8 @@ namespace O_ComTool_Pro
             if (dllName.EndsWith("_resources")) return null;
             System.Resources.ResourceManager rm = new System.Resources.ResourceManager("O_ComTool_Pro.Properties.Resources", System.Reflection.Assembly.GetExecutingAssembly());
             byte[] bytes = (byte[])rm.GetObject(dllName);
+            // 资源未命中时返回 null，交由正常解析流程；避免 Assembly.Load(null) 抛 ArgumentNullException 连累后续所有程序集解析
+            if (bytes == null) return null;
             return System.Reflection.Assembly.Load(bytes);
         }
     }

@@ -13,7 +13,7 @@ namespace O_ComTool_Pro
     public partial class Update : Form
     {
         string update_url = "";
-        string server_url = "http://www.ifreehub.com/octservice/";
+        string server_url = "https://www.ifreehub.com/octservice/";
 
         UpdateHelper.check_value ret_update;
 
@@ -54,7 +54,7 @@ namespace O_ComTool_Pro
 
         private void btnGoToUpdate_Click(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start(update_url);
+            UpdateHelper.StartUpdateLink(update_url);
         }
 
         private void btnSkipCurrentVersion_Click(object sender, EventArgs e)

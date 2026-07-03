@@ -27,7 +27,7 @@ namespace O_ComTool_Pro
 
         private void btnGoToUpdate_Click(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start(update_url);
+            UpdateHelper.StartUpdateLink(update_url);
             this.Close();
         }
 

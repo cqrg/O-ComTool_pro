@@ -21,7 +21,7 @@ namespace O_ComTool_Pro
 {
     public partial class MainForm : Form
     {
-        string server_url = "http://www.ifreehub.com/octservice"; // 服务器地址，用于检查更新
+        string server_url = "https://www.ifreehub.com/octservice"; // 服务器地址，用于检查更新
         public static UpdateHelper.check_value check_version_value;
 
         bool FrameOrByte = true;
