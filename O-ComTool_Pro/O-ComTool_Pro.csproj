@@ -41,6 +41,14 @@
       <EmbedInteropTypes>False</EmbedInteropTypes>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Microsoft.Web.WebView2.Core">
+      <HintPath>Libs\WebView2\Microsoft.Web.WebView2.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.WinForms">
+      <HintPath>Libs\WebView2\Microsoft.Web.WebView2.WinForms.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Design" />
@@ -102,6 +110,10 @@
     <Compile Include="Modbus\ModbusReceiveAggregator.cs" />
     <Compile Include="Modbus\IModbusTransport.cs" />
     <Compile Include="Modbus\ModbusPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Chart\IValueExtractor.cs" />
+    <Compile Include="Chart\ChartPanel.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="MainForm.cs">
@@ -319,6 +331,22 @@
     <None Include="Resources\FastColoredTextBox.dll" />
     <None Include="bin\Release\FastColoredTextBox.dll" />
     <Content Include="Logo48.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- ECharts 离线脚本，内联进图表 HTML -->
+    <EmbeddedResource Include="Resources\echarts.min.js">
+      <LogicalName>O_ComTool_Pro.echarts.min.js</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- WebView2 原生 Loader：按进程位数输出到生成目录(AnyCPU 在 64 位系统跑 x64) -->
+    <None Include="Libs\WebView2\WebView2Loader.x64.dll">
+      <Link>WebView2Loader.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Libs\WebView2\WebView2Loader.x86.dll" />
+    <None Include="Libs\WebView2\Microsoft.Web.WebView2.Core.dll" />
+    <None Include="Libs\WebView2\Microsoft.Web.WebView2.WinForms.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

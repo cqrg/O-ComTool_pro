@@ -31,6 +31,9 @@ namespace O_ComTool_Pro
         private System.Windows.Forms.Timer _modbusTimeoutTimer;
         public event Action<Modbus.ModbusResponse> ResponseReceived;
         public event Action<string> StatusChanged;
+
+        // ---- Chart ----
+        private Chart.ChartPanel _chartPanel;
         public static UpdateHelper.check_value check_version_value;
 
         bool FrameOrByte = true;
@@ -496,6 +499,20 @@ namespace O_ComTool_Pro
             _modbusPanel.Dock = DockStyle.Fill;
             tbpModbus.Controls.Add(_modbusPanel);
             tabControl1.TabPages.Add(tbpModbus);
+
+            // 图表面板
+            _chartPanel = new Chart.ChartPanel();
+            ResponseReceived += ModbusResponse_ForChart;   // Modbus 响应喂给图表
+            TabPage tbpChart = new TabPage("图表");
+            _chartPanel.Dock = DockStyle.Fill;
+            tbpChart.Controls.Add(_chartPanel);
+            tabControl1.TabPages.Add(tbpChart);
+        }
+
+        private void ModbusResponse_ForChart(Modbus.ModbusResponse r)
+        {
+            if (_chartPanel != null && r != null && !r.IsException)
+                _chartPanel.OnFrame(r.Data, r);
         }
 
         // ---- IModbusTransport 实现 ----
@@ -888,6 +905,13 @@ namespace O_ComTool_Pro
                     byte[] chunk = new byte[RecLen];
                     Array.Copy(RecBuf, chunk, RecLen);
                     _modbusAggregator.Feed(chunk, RecLen);
+                    if (_chartPanel != null) _chartPanel.OnFrame(chunk, null);
+                }
+                else if (_chartPanel != null)
+                {
+                    byte[] chunk = new byte[RecLen];
+                    Array.Copy(RecBuf, chunk, RecLen);
+                    _chartPanel.OnFrame(chunk, null);
                 }
 
                 spRxCount += RecLen;
