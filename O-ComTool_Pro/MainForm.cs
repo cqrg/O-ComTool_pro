@@ -603,6 +603,20 @@ namespace O_ComTool_Pro
         }
 
 
+        /// <summary>
+        /// 全局快捷键：Ctrl+Enter 触发一次发送（复用 btnSend_Click 的端口/文本守卫）。
+        /// KeyPreview=true 使任意子控件焦点的按键都先冒泡到本处理。
+        /// </summary>
+        private void MainForm_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.Enter)
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                btnSend_Click(this.btnSend, EventArgs.Empty);
+            }
+        }
+
         private void btnSend_Click(object sender, EventArgs e)
         {
             // 检查串口是否打开
