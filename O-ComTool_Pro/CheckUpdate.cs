@@ -16,7 +16,6 @@ namespace O_ComTool_Pro
         public CheckUpdate()
         {
             InitializeComponent();
-            Control.CheckForIllegalCrossThreadCalls = false;
         }
 
         private void CheckUpdate_Load(object sender, EventArgs e)

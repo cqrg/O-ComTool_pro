@@ -32,6 +32,8 @@ namespace O_ComTool_Pro
         
 
         FileStream log_fs;
+        StreamWriter log_sw;             // 长生命周期的日志写入器，避免每帧 new StreamWriter 重复写 UTF-8 BOM
+        readonly object logLock = new object();   // log_fs / log_sw 跨线程访问的同步锁
         string log_save_path = "";// 日志文件保存路径
         string load_file_path = "";// 加载文件路径
         List<QuickSend> quicksend_list = new List<QuickSend>();
@@ -79,7 +81,7 @@ namespace O_ComTool_Pro
         {
             
             InitializeComponent();
-            Control.CheckForIllegalCrossThreadCalls = false;
+            // 不再禁用跨线程检查；所有 UI 写入必须经 Invoke/BeginInvoke 编组到 UI 线程
         }
         
 
@@ -104,10 +106,15 @@ namespace O_ComTool_Pro
                     {
                         check_version_value.version = ret_update.version;
                         check_version_value.link = ret_update.link;
-                        app.Default.LastCheckTime = DateTime.Now.ToString("yyy-MM-dd HH:mm:ss");
+                        app.Default.LastCheckTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                         app.Default.Save();
-                        CheckUpdate check_update = new CheckUpdate();
-                        check_update.ShowDialog();
+                        // ShowDialog 必须在 UI 线程执行
+                        this.Invoke((Action)(() =>
+                        {
+                            if (this.IsDisposed) return;
+                            CheckUpdate check_update = new CheckUpdate();
+                            check_update.ShowDialog();
+                        }));
                     }
                     else
                     {
@@ -527,7 +534,7 @@ namespace O_ComTool_Pro
             if (chkShowTime.Checked == true)
             {
                 string data_str = DateTime.Now.ToString("yyyy-MM-dd ");//写入文件时添加年月
-                WriteLog(data_str, log_fs);
+                WriteLog(data_str);
                 string TimeStamp = DateTime.Now.ToString("HH:mm:ss:fff-> ");
                 if (time_newline_enable == true) TimeStamp += "\r\n";
 
@@ -555,7 +562,7 @@ namespace O_ComTool_Pro
 
             if (send_2_file_enable == true)
             {
-                WriteLog(display_str, log_fs);
+                WriteLog(display_str);
             }
         }
 
@@ -762,24 +769,25 @@ namespace O_ComTool_Pro
             return sb;
         }
 
-        void WriteLog(string str, FileStream fs)
+        void WriteLog(string str)
         {
-            try
+            // 接收线程与 UI 线程都会调用，必须加锁；使用单个长生命周期 StreamWriter，避免每次写入产生 BOM
+            lock (logLock)
             {
-                if (chkAutoSave.Checked)
+                try
                 {
-                    StreamWriter fsw = new StreamWriter(fs);
-                    fsw.Write(str);
-                    fsw.Flush();
+                    if (!chkAutoSave.Checked || log_sw == null) return;
+                    log_sw.Write(str);
+                    log_sw.Flush();
                 }
-                else
+                catch (ObjectDisposedException)
                 {
-                    return;
+                    // 日志正被关闭，忽略
                 }
-            }
-            catch
-            {
-                ;
+                catch (System.IO.IOException)
+                {
+                    // 磁盘 IO 异常，忽略以免拖垮接收
+                }
             }
         }
 
@@ -854,37 +862,45 @@ namespace O_ComTool_Pro
 
         private void serialPort1_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
+            // 关闭串口/退出时直接返回，避免回调命中已释放的句柄
+            if (serialPort1 == null || !serialPort1.IsOpen) return;
+            if (this.IsDisposed || !this.IsHandleCreated) return;
+
             try
             {
-                //延时不严谨，解决办法：短时延时，然后判断字长是否变化，变化则等待，不变则退出。
-                //最慢的1200bit/s，1字节11bit，最大耗时1/1200*11*1e3=9.17ms
-                int RecLen = 0;
+                int RecLen = serialPort1.BytesToRead;
+                if (RecLen <= 0) return;
 
-                do
+                // 读取当前缓冲中所有可用字节；SerialPort.Read 可能少于请求量，需循环读满
+                byte[] RecBuf = new byte[RecLen];
+                int totalRead = 0;
+                while (totalRead < RecLen && serialPort1.IsOpen)
                 {
-                    RecLen = serialPort1.BytesToRead;
-                    Thread.Sleep(frame_interval);
-                } while (serialPort1.BytesToRead != RecLen && RecLen < 1024);
-                if (RecLen == 0) return;
+                    int n = serialPort1.Read(RecBuf, totalRead, RecLen - totalRead);
+                    if (n <= 0) break;
+                    totalRead += n;
+                }
+                if (totalRead == 0) return;
+                RecLen = totalRead;
 
-                byte[] RecBuf = new byte[RecLen];//声明一个临时数组存储当前来的串口数据  
-                serialPort1.Read(RecBuf, 0, RecLen);//读取缓冲数据 
                 spRxCount += RecLen;
                 spFrameRxCount += 1;
 
-                if (FrameOrByte == true)
-                {
-                    tssRxCount.Text = "RX: " + spFrameRxCount.ToString() + " frames";
-                    tssLabRateValue.Text = Math.Round((spFrameRxCount * 1.0) * 100 / (spFrameTxCount), 2) + "%";
-                }
-                else
-                {
-                    tssRxCount.Text = "RX: " + spRxCount.ToString() + " bytes";
-                    tssLabRateValue.Text = Math.Round((spRxCount * 1.0) * 100 / (spTxCount), 2) + "%";
-                }
+                int rxCountForRate = FrameOrByte ? spFrameRxCount : spRxCount;
+                int txCountForRate = FrameOrByte ? spFrameTxCount : spTxCount;
+                string rateText = (txCountForRate > 0)
+                    ? Math.Round(rxCountForRate * 100.0 / txCountForRate, 2) + "%"
+                    : "N/A";
+                string rxCountText = FrameOrByte
+                    ? "RX: " + spFrameRxCount.ToString() + " frames"
+                    : "RX: " + spRxCount.ToString() + " bytes";
 
                 this.Invoke((EventHandler)(delegate
                 {
+                    if (this.IsDisposed) return;
+                    tssRxCount.Text = rxCountText;
+                    tssLabRateValue.Text = rateText;
+
                     StringBuilder tmp_rx_sb = new StringBuilder(50);
                     if (chkShowTime.Checked == true)
                     {
@@ -892,7 +908,7 @@ namespace O_ComTool_Pro
                         if (time_newline_enable == true) TimeStamp += "\r\n";
                         tmp_rx_sb.Append(TimeStamp);
                         TimeStamp = DateTime.Now.ToString("yyyy-MM-dd ");//写入文件时添加年月
-                        WriteLog(TimeStamp, log_fs);
+                        WriteLog(TimeStamp);
                     }
                     if (radHexReceive.Checked == true)
                     {
@@ -914,7 +930,7 @@ namespace O_ComTool_Pro
                         timerAutoReply.Start();
                     }
 
-                    WriteLog(tmp_rx_sb.ToString(), log_fs);
+                    WriteLog(tmp_rx_sb.ToString());
 
                     string tmp_str = tmp_rx_sb.ToString();
 
@@ -928,9 +944,13 @@ namespace O_ComTool_Pro
                     timerReceiveLed.Start();
                 }));
             }
-            catch
+            catch (InvalidOperationException)
             {
-                ;
+                // 串口关闭/竞态期间偶发，忽略即可，不要吞掉其他异常
+            }
+            catch (System.IO.IOException)
+            {
+                // 串口 IO 异常（如 USB 拔出），忽略
             }
         }
 
@@ -987,8 +1007,12 @@ namespace O_ComTool_Pro
                 {
                     log_save_path = saveFileDialog1.FileName.ToString();
                     toolTip1.SetToolTip(chkAutoSave, log_save_path);
-                    log_fs = new FileStream(log_save_path, FileMode.Append);
-                    WriteLog(fctbReceive.Text, log_fs);
+                    lock (logLock)
+                    {
+                        log_fs = new FileStream(log_save_path, FileMode.Append, FileAccess.Write, FileShare.Read);
+                        log_sw = new StreamWriter(log_fs);   // 复用同一个 writer，UTF-8 BOM 只写一次
+                    }
+                    WriteLog(fctbReceive.Text);
                 }
                 else
                 {
@@ -998,14 +1022,11 @@ namespace O_ComTool_Pro
             }
             else
             {
-                try
+                lock (logLock)
                 {
                     toolTip1.SetToolTip(chkAutoSave, "保存路径为空");
-                    log_fs.Close();
-                }
-                catch
-                {
-                    return;
+                    if (log_sw != null) { log_sw.Dispose(); log_sw = null; }
+                    log_fs = null;
                 }
             }
         }
@@ -1440,7 +1461,11 @@ namespace O_ComTool_Pro
                 
                 SaveConfig();
                 if (serialPort1.IsOpen == true) serialPort1.Close();
-                if (chkAutoSave.Checked == true) log_fs.Close();
+                lock (logLock)
+                {
+                    if (log_sw != null) { log_sw.Dispose(); log_sw = null; }
+                    log_fs = null;
+                }
                 
                 notifyIcon1.Dispose();
 

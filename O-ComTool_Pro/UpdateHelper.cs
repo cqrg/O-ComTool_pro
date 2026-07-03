@@ -53,7 +53,8 @@ namespace O_ComTool_Pro
         static bool IsSafeUrl(string link)
         {
             if (string.IsNullOrWhiteSpace(link)) return false;
-            if (!Uri.TryCreate(link.Trim(), UriKind.Absolute, out Uri uri)) return false;
+            Uri uri;
+            if (!Uri.TryCreate(link.Trim(), UriKind.Absolute, out uri)) return false;
             string scheme = uri.Scheme.ToLowerInvariant();
             return scheme == "http" || scheme == "https";
         }
