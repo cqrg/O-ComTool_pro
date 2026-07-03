@@ -19,9 +19,18 @@ using FastColoredTextBoxNS;
 
 namespace O_ComTool_Pro
 {
-    public partial class MainForm : Form
+    public partial class MainForm : Form, Modbus.IModbusTransport
     {
         string server_url = "https://www.ifreehub.com/octservice"; // 服务器地址，用于检查更新
+
+        // ---- Modbus RTU ----
+        private Modbus.ModbusReceiveAggregator _modbusAggregator;
+        private Modbus.ModbusPanel _modbusPanel;
+        private bool _modbusMode;
+        private byte _modbusPendingFc;
+        private System.Windows.Forms.Timer _modbusTimeoutTimer;
+        public event Action<Modbus.ModbusResponse> ResponseReceived;
+        public event Action<string> StatusChanged;
         public static UpdateHelper.check_value check_version_value;
 
         bool FrameOrByte = true;
@@ -475,6 +484,60 @@ namespace O_ComTool_Pro
             this.Text = "O-ComTool V" + Application.ProductVersion.Substring(0, 5);
             StartCheckVersion();
             LoadLastConfig();
+
+            // Modbus 面板
+            _modbusAggregator = new Modbus.ModbusReceiveAggregator();
+            _modbusAggregator.OnFrame += ModbusAggregator_OnFrame;
+            _modbusTimeoutTimer = new System.Windows.Forms.Timer { Interval = 500 };
+            _modbusTimeoutTimer.Tick += ModbusTimeout_Tick;
+            _modbusPanel = new Modbus.ModbusPanel();
+            _modbusPanel.Bind(this);
+            TabPage tbpModbus = new TabPage("Modbus");
+            _modbusPanel.Dock = DockStyle.Fill;
+            tbpModbus.Controls.Add(_modbusPanel);
+            tabControl1.TabPages.Add(tbpModbus);
+        }
+
+        // ---- IModbusTransport 实现 ----
+        public bool IsOpen { get { return serialPort1 != null && serialPort1.IsOpen; } }
+
+        public void Send(byte[] frame, byte requestFc)
+        {
+            if (!IsOpen || frame == null) return;
+            _modbusPendingFc = requestFc;
+            _modbusAggregator.SetExpectedFunctionCode(requestFc);
+            _modbusAggregator.Reset();
+            try { serialPort1.Write(frame, 0, frame.Length); }
+            catch (Exception) { RaiseStatus("状态：发送失败"); return; }
+            _modbusTimeoutTimer.Stop();
+            _modbusTimeoutTimer.Start();
+        }
+
+        public void SetModbusMode(bool on)
+        {
+            _modbusMode = on;
+            if (!on && _modbusAggregator != null) _modbusAggregator.Reset();
+        }
+
+        private void ModbusTimeout_Tick(object sender, EventArgs e)
+        {
+            _modbusTimeoutTimer.Stop();
+            RaiseStatus("状态：响应超时");
+        }
+
+        private void ModbusAggregator_OnFrame(byte[] frame, int len)
+        {
+            Modbus.ModbusResponse resp = Modbus.ModbusMaster.ParseResponse(frame, len, _modbusPendingFc);
+            // 停超时定时器（切到 UI 线程）
+            try { this.BeginInvoke((Action)(() => _modbusTimeoutTimer.Stop())); } catch (InvalidOperationException) { }
+            var h = ResponseReceived;
+            if (h != null) h(resp);
+        }
+
+        private void RaiseStatus(string text)
+        {
+            var h = StatusChanged;
+            if (h != null) h(text);
         }
 
         private void quickSend3_Load(object sender, EventArgs e)
@@ -818,6 +881,14 @@ namespace O_ComTool_Pro
                 }
                 if (totalRead == 0) return;
                 RecLen = totalRead;
+
+                // Modbus 模式下，把本次到达的字节喂给聚合器拼帧（与原始显示并存）
+                if (_modbusMode && _modbusAggregator != null)
+                {
+                    byte[] chunk = new byte[RecLen];
+                    Array.Copy(RecBuf, chunk, RecLen);
+                    _modbusAggregator.Feed(chunk, RecLen);
+                }
 
                 spRxCount += RecLen;
                 spFrameRxCount += 1;

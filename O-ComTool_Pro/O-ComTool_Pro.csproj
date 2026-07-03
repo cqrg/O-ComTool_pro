@@ -98,6 +98,12 @@
     </Compile>
     <Compile Include="HttpWebRequestHelper.cs" />
     <Compile Include="CrcUtil.cs" />
+    <Compile Include="Modbus\ModbusMaster.cs" />
+    <Compile Include="Modbus\ModbusReceiveAggregator.cs" />
+    <Compile Include="Modbus\IModbusTransport.cs" />
+    <Compile Include="Modbus\ModbusPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
