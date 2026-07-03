@@ -1234,11 +1234,14 @@ namespace O_ComTool_Pro
             app.Default.receEncodeAscii = radAsciiReceive.Checked == true ? true : false;
             app.Default.chkAutoLine = chkAutoLine.Checked == true ? true : false;
             app.Default.chkShowTime = chkShowTime.Checked == true ? true : false;
+            app.Default.chkAutoReply = chkAutoReply.Checked == true ? true : false;
             app.Default.AutoReplyDelay = (int)nudReplyDelay.Value;
 
             // 发送设置
             app.Default.sendEncodeAscii = radAsciiSend.Checked == true ? true : false;
             app.Default.chkAppendNewLine = chkNewLine.Checked == true ? true : false;
+            app.Default.chkAutoCount = chkAutoCount.Checked == true ? true : false;
+            app.Default.chkRepeatSend = chkRepeatSend.Checked == true ? true : false;
             app.Default.RepeatInterval = (int)nudRepeatInterval.Value;
 
             // 发送数据
@@ -1635,99 +1638,138 @@ namespace O_ComTool_Pro
             string d_font_str = s_font.Name + "," + s_font.SizeInPoints + "pt";
             return d_font_str;
         }
+        // INI 配置项的单一定义点：导出/导入共用同一张表，杜绝两侧字段漂移。
+        private class IniField
+        {
+            public string Section;
+            public string Key;
+            public Func<string> Get;
+            public Action<string> Set;
+        }
+
+        private static IniField StrF(string section, string key, Func<string> get, Action<string> set)
+        {
+            return new IniField { Section = section, Key = key, Get = get, Set = set };
+        }
+        private static IniField BoolF(string section, string key, Func<bool> get, Action<bool> set)
+        {
+            return new IniField { Section = section, Key = key, Get = () => get().ToString(), Set = v => set(Convert.ToBoolean(v)) };
+        }
+        private static IniField IntF(string section, string key, Func<int> get, Action<int> set)
+        {
+            return new IniField { Section = section, Key = key, Get = () => get().ToString(), Set = v => set(int.Parse(v)) };
+        }
+        private static IniField ShortF(string section, string key, Func<short> get, Action<short> set)
+        {
+            return new IniField { Section = section, Key = key, Get = () => get().ToString(), Set = v => set(short.Parse(v)) };
+        }
+        private IniField ColorF(string section, string key, Func<Color> get, Action<Color> set)
+        {
+            return new IniField { Section = section, Key = key, Get = () => Color2Hex(get()), Set = v => set(System.Drawing.ColorTranslator.FromHtml(v)) };
+        }
+        private static IniField FontF(string section, string key, Func<Font> get, Action<Font> set, FontConverter cvt)
+        {
+            return new IniField { Section = section, Key = key, Get = () => cvt.ConvertToString(get()), Set = v => set(cvt.ConvertFromString(v) as Font) };
+        }
+
+        private List<IniField> BuildIniFields(FontConverter cvt)
+        {
+            return new List<IniField>
+            {
+                // SerialPort
+                StrF("SerialPort", "cmbBaudRate", () => cmbBaudRate.Text, v => app.Default.cmbBaudRate = v),
+                ShortF("SerialPort", "cmbDataBitIndex", () => (short)cmbDataBit.SelectedIndex, v => app.Default.cmbDataBitIndex = v),
+                ShortF("SerialPort", "cmbParityBitIndex", () => (short)cmbParityBit.SelectedIndex, v => app.Default.cmbParityBitIndex = v),
+                ShortF("SerialPort", "cmbStopBitIndex", () => (short)cmbStopBit.SelectedIndex, v => app.Default.cmbStopBitIndex = v),
+                ShortF("SerialPort", "cmbFlowCtrlIndex", () => (short)cmbFlowCtrl.SelectedIndex, v => app.Default.cmbFlowCtrlIndex = v),
+
+                // Receive
+                BoolF("Receive", "receEncodeAscii", () => radAsciiReceive.Checked, v => app.Default.receEncodeAscii = v),
+                BoolF("Receive", "chkAutoLine", () => chkAutoLine.Checked, v => app.Default.chkAutoLine = v),
+                BoolF("Receive", "chkShowTime", () => chkShowTime.Checked, v => app.Default.chkShowTime = v),
+                BoolF("Receive", "chkAutoReply", () => chkAutoReply.Checked, v => app.Default.chkAutoReply = v),
+                IntF("Receive", "AutoReplyDelay", () => (int)nudReplyDelay.Value, v => app.Default.AutoReplyDelay = v),
+
+                // Send
+                BoolF("Send", "sendEncodeAscii", () => radAsciiSend.Checked, v => app.Default.sendEncodeAscii = v),
+                BoolF("Send", "chkAppendNewLine", () => chkNewLine.Checked, v => app.Default.chkAppendNewLine = v),
+                BoolF("Send", "chkAutoCount", () => chkAutoCount.Checked, v => app.Default.chkAutoCount = v),
+                BoolF("Send", "chkRepeatSend", () => chkRepeatSend.Checked, v => app.Default.chkRepeatSend = v),
+                IntF("Send", "RepeatInterval", () => (int)nudRepeatInterval.Value, v => app.Default.RepeatInterval = v),
+
+                // GeneralSend
+                StrF("GeneralSend", "GeneralSendData", () => txbSend.Text, v => app.Default.GeneralSendData = v),
+                BoolF("GeneralSend", "LoadFileEnable", () => app.Default.LoadFileEnable, v => app.Default.LoadFileEnable = v),
+                StrF("GeneralSend", "LoadFilePath", () => load_file_path, v => app.Default.LoadFilePath = v),
+
+                // Option
+                BoolF("Option", "MinToTray", () => app.Default.MinToTray, v => app.Default.MinToTray = v),
+                BoolF("Option", "CloseToTray", () => app.Default.CloseToTray, v => app.Default.CloseToTray = v),
+                ColorF("Option", "ReceBackColor1", () => app.Default.ReceBackColor1, v => app.Default.ReceBackColor1 = v),
+                ColorF("Option", "ReceForeColor1", () => app.Default.ReceForeColor1, v => app.Default.ReceForeColor1 = v),
+                ColorF("Option", "SendBackColor1", () => app.Default.SendBackColor1, v => app.Default.SendBackColor1 = v),
+                ColorF("Option", "SendForeColor1", () => app.Default.SendForeColor1, v => app.Default.SendForeColor1 = v),
+                FontF("Option", "ReceFont1", () => app.Default.ReceFont1, v => app.Default.ReceFont1 = v, cvt),
+                FontF("Option", "SendFont1", () => app.Default.SendFont1, v => app.Default.SendFont1 = v, cvt),
+                ColorF("Option", "ReceBackColor2", () => app.Default.ReceBackColor2, v => app.Default.ReceBackColor2 = v),
+                ColorF("Option", "ReceForeColor2", () => app.Default.ReceForeColor2, v => app.Default.ReceForeColor2 = v),
+                ColorF("Option", "SendBackColor2", () => app.Default.SendBackColor2, v => app.Default.SendBackColor2 = v),
+                ColorF("Option", "SendForeColor2", () => app.Default.SendForeColor2, v => app.Default.SendForeColor2 = v),
+                FontF("Option", "ReceFont2", () => app.Default.ReceFont2, v => app.Default.ReceFont2 = v, cvt),
+                FontF("Option", "SendFont2", () => app.Default.SendFont2, v => app.Default.SendFont2 = v, cvt),
+                BoolF("Option", "QuitConfirm", () => app.Default.QuitConfirm, v => app.Default.QuitConfirm = v),
+                BoolF("Option", "HightLightEnable", () => app.Default.HightLightEnable, v => app.Default.HightLightEnable = v),
+                BoolF("Option", "SendDisplayEnable", () => app.Default.SendDisplayEnable, v => app.Default.SendDisplayEnable = v),
+                BoolF("Option", "CommentEnable", () => app.Default.CommentEnable, v => app.Default.CommentEnable = v),
+                IntF("Option", "FrameInterval", () => app.Default.FrameInterval, v => app.Default.FrameInterval = v),
+                BoolF("Option", "TimeNewline", () => app.Default.chkTimeNewLine, v => app.Default.chkTimeNewLine = v),
+                BoolF("Option", "Send2FileEnable", () => app.Default.Send2FileEnable, v => app.Default.Send2FileEnable = v),
+                BoolF("Option", "Send2NewLineEnable", () => app.Default.Send2NewLineEnable, v => app.Default.Send2NewLineEnable = v),
+                BoolF("Option", "DisplayPlan1Enable", () => app.Default.DisplayPlan1Enable, v => app.Default.DisplayPlan1Enable = v),
+
+                // 高亮正则
+                StrF("Option", "HighLightRed", () => app.Default.HighLightRed, v => app.Default.HighLightRed = v),
+                StrF("Option", "HighLightGreen", () => app.Default.HighLightGreen, v => app.Default.HighLightGreen = v),
+                StrF("Option", "HighLightYellow", () => app.Default.HighLightYellow, v => app.Default.HighLightYellow = v),
+                StrF("Option", "HighLightBlue", () => app.Default.HighLightBlue, v => app.Default.HighLightBlue = v),
+                StrF("Option", "HighLightMagenta", () => app.Default.HighLightMagenta, v => app.Default.HighLightMagenta = v),
+                StrF("Option", "HighLightCyan", () => app.Default.HighLightCyan, v => app.Default.HighLightCyan = v),
+                StrF("Option", "HighLightOrange", () => app.Default.HighLightOrange, v => app.Default.HighLightOrange = v),
+            };
+        }
+
         private void tsmExportConfig_Click(object sender, EventArgs e)
         {
-            string file_path = "";
-            string section = "";
-            //设置文件类型  
+            //设置文件类型
             saveFileDialog1.Filter = "文本文件|*.ini|所有文件(*.*)|*.*";
             saveFileDialog1.FileName = "O-ComTool_cfg.ini";
-            //保存对话框是否记忆上次打开的目录  
+            //保存对话框是否记忆上次打开的目录
             saveFileDialog1.RestoreDirectory = true;
 
-            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-            {
-                file_path = saveFileDialog1.FileName.ToString();
-
-                // SerialPort
-                section = "SerialPort";
-                WritePrivateProfileString(section, "cmbBaudRate", cmbBaudRate.Text, file_path);
-                WritePrivateProfileString(section, "cmbDataBitIndex", cmbDataBit.SelectedIndex.ToString(), file_path);
-                WritePrivateProfileString(section, "cmbParityBitIndex", cmbParityBit.SelectedIndex.ToString(), file_path);
-                WritePrivateProfileString(section, "cmbStopBitIndex", cmbStopBit.SelectedIndex.ToString(), file_path);
-                WritePrivateProfileString(section, "cmbFlowCtrlIndex", cmbFlowCtrl.SelectedIndex.ToString(), file_path);
-
-                section = "Receive";
-                WritePrivateProfileString(section, "receEncodeAscii", radAsciiReceive.Checked == true ? "True" : "False", file_path);
-                WritePrivateProfileString(section, "chkAutoLine", chkAutoLine.Checked == true ? "True" : "False", file_path);
-                WritePrivateProfileString(section, "chkShowTime", chkShowTime.Checked == true ? "True" : "False", file_path);
-                WritePrivateProfileString(section, "AutoReplyDelay", nudReplyDelay.Value.ToString(), file_path);
-
-                section = "Send";
-                WritePrivateProfileString(section, "sendEncodeAscii", radAsciiSend.Checked == true ? "True" : "False", file_path);
-                WritePrivateProfileString(section, "chkAppendNewLine", chkNewLine.Checked == true ? "True" : "False", file_path);
-                WritePrivateProfileString(section, "RepeatInterval", nudRepeatInterval.Value.ToString(), file_path);
-
-                section = "GeneralSend";
-                WritePrivateProfileString(section, "GeneralSendData", txbSend.Text, file_path);
-                WritePrivateProfileString(section, "LoadFileEnable", app.Default.LoadFileEnable.ToString(), file_path);
-                WritePrivateProfileString(section, "LoadFilePath", load_file_path, file_path);
-
-                section = "QuickSend";
-                WritePrivateProfileString(section, "QuickSendCount", quicksend_list.Count.ToString(), file_path);
-                for (int i = 0; i < quicksend_list.Count; i++)
-                {
-                    WritePrivateProfileString(section, "QuickSendTitle" + i, quicksend_list[i].ItemName, file_path);
-                    WritePrivateProfileString(section, "QuickSendData" + i, quicksend_list[i].Data, file_path);
-                }
-                
-                section = "Option";
-                var cvt = new FontConverter();
-                WritePrivateProfileString(section, "MinToTray", app.Default.MinToTray.ToString(), file_path);
-                WritePrivateProfileString(section, "CloseToTray", app.Default.CloseToTray.ToString(), file_path);
-                WritePrivateProfileString(section, "ReceBackColor1", Color2Hex(app.Default.ReceBackColor1), file_path);
-                WritePrivateProfileString(section, "ReceForeColor1", Color2Hex(app.Default.ReceForeColor1), file_path);
-                WritePrivateProfileString(section, "SendBackColor1", Color2Hex(app.Default.SendBackColor1), file_path);
-                WritePrivateProfileString(section, "SendForeColor1", Color2Hex(app.Default.SendForeColor1), file_path);
-                WritePrivateProfileString(section, "ReceFont1", cvt.ConvertToString(app.Default.ReceFont1), file_path);
-                WritePrivateProfileString(section, "SendFont1", cvt.ConvertToString(app.Default.SendFont1), file_path);
-                WritePrivateProfileString(section, "ReceBackColor2", Color2Hex(app.Default.ReceBackColor2), file_path);
-                WritePrivateProfileString(section, "ReceForeColor2", Color2Hex(app.Default.ReceForeColor2), file_path);
-                WritePrivateProfileString(section, "SendBackColor2", Color2Hex(app.Default.SendBackColor2), file_path);
-                WritePrivateProfileString(section, "SendForeColor2", Color2Hex(app.Default.SendForeColor2), file_path);
-                WritePrivateProfileString(section, "ReceFont2", cvt.ConvertToString(app.Default.ReceFont2), file_path);
-                WritePrivateProfileString(section, "SendFont2", cvt.ConvertToString(app.Default.SendFont2), file_path);
-                WritePrivateProfileString(section, "QuitConfirm", app.Default.QuitConfirm.ToString(), file_path);
-                WritePrivateProfileString(section, "HightLightEnable", app.Default.HightLightEnable.ToString(), file_path);
-                WritePrivateProfileString(section, "SendDisplayEnable", app.Default.HightLightEnable.ToString(), file_path);
-                WritePrivateProfileString(section, "CommentEnable", app.Default.HightLightEnable.ToString(), file_path);
-                WritePrivateProfileString(section, "FrameInterval", app.Default.FrameInterval.ToString(), file_path);
-                WritePrivateProfileString(section, "TimeNewline", app.Default.chkTimeNewLine.ToString(), file_path);
-                WritePrivateProfileString(section, "Send2FileEnable", app.Default.Send2FileEnable.ToString(), file_path);
-                WritePrivateProfileString(section, "Send2NewLineEnable", app.Default.Send2NewLineEnable.ToString(), file_path);
-
-                WritePrivateProfileString(section, "HighLightRed", app.Default.HighLightRed, file_path);
-                WritePrivateProfileString(section, "HighLightGreen", app.Default.HighLightGreen, file_path);
-                WritePrivateProfileString(section, "HighLightYellow", app.Default.HighLightYellow, file_path);
-                WritePrivateProfileString(section, "HighLightBlue", app.Default.HighLightBlue, file_path);
-                WritePrivateProfileString(section, "HighLightMagenta", app.Default.HighLightMagenta, file_path);
-                WritePrivateProfileString(section, "HighLightCyan", app.Default.HighLightCyan, file_path);
-                WritePrivateProfileString(section, "HighLightOrange", app.Default.HighLightOrange, file_path);
-
-                WritePrivateProfileString(section, "LoadFileEnable", app.Default.LoadFileEnable.ToString(), file_path);
-                WritePrivateProfileString(section, "CommentEnable", app.Default.CommentEnable.ToString(), file_path);
-                WritePrivateProfileString(section, "DisplayPlan1Enable", app.Default.DisplayPlan1Enable.ToString(), file_path);
-                WritePrivateProfileString(section, "SendDisplayEnable", app.Default.SendDisplayEnable.ToString(), file_path);  
-
-
-                MessageBox.Show("配置文件导出成功！", "O-ComTool 提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            }
-            else
+            if (saveFileDialog1.ShowDialog() != DialogResult.OK)
             {
                 chkAutoSave.Checked = false;
                 return;
             }
+            string file_path = saveFileDialog1.FileName.ToString();
+
+            // 标量配置项统一写出
+            var cvt = new FontConverter();
+            foreach (var f in BuildIniFields(cvt))
+            {
+                WritePrivateProfileString(f.Section, f.Key, f.Get() ?? "", file_path);
+            }
+
+            // 快捷发送列表（数量不定，逐条存储）
+            const string qs = "QuickSend";
+            WritePrivateProfileString(qs, "QuickSendCount", quicksend_list.Count.ToString(), file_path);
+            for (int i = 0; i < quicksend_list.Count; i++)
+            {
+                WritePrivateProfileString(qs, "QuickSendTitle" + i, quicksend_list[i].ItemName, file_path);
+                WritePrivateProfileString(qs, "QuickSendData" + i, quicksend_list[i].Data, file_path);
+            }
+
+            MessageBox.Show("配置文件导出成功！", "O-ComTool 提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         TextStyle redStyle = new TextStyle(Brushes.Red, null, FontStyle.Regular);
@@ -1791,100 +1833,42 @@ namespace O_ComTool_Pro
 
         private void tsmImportConfig_Click(object sender, EventArgs e)
         {
-            string file_path = "";
-            string section = "";
-            StringBuilder temp = new StringBuilder(1024);
             openFileDialog1.Title = "请选择文件";
             openFileDialog1.Filter = "文本文件|*.ini|所有文件(*.*)|*.*";
             openFileDialog1.FileName = "";
             openFileDialog1.RestoreDirectory = true;
-            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            if (openFileDialog1.ShowDialog() != DialogResult.OK)
             {
-                file_path = openFileDialog1.FileName;
-
-                try
-                {
-                    section = "SerialPort";
-                    app.Default.cmbBaudRate = GetPrivateProfileStringFake(section, "cmbBaudRate", file_path);
-                    app.Default.cmbDataBitIndex = short.Parse(GetPrivateProfileStringFake(section, "cmbDataBitIndex", file_path));
-                    app.Default.cmbParityBitIndex = short.Parse(GetPrivateProfileStringFake(section, "cmbParityBitIndex", file_path));
-                    app.Default.cmbStopBitIndex = short.Parse(GetPrivateProfileStringFake(section, "cmbStopBitIndex", file_path));
-                    app.Default.cmbFlowCtrlIndex = short.Parse(GetPrivateProfileStringFake(section, "cmbFlowCtrlIndex", file_path));
-
-                    section = "Receive";
-                    app.Default.receEncodeAscii = Convert.ToBoolean(GetPrivateProfileStringFake(section, "receEncodeAscii", file_path));
-                    app.Default.chkAutoLine = Convert.ToBoolean(GetPrivateProfileStringFake(section, "chkAutoLine", file_path));
-                    app.Default.chkShowTime = Convert.ToBoolean(GetPrivateProfileStringFake(section, "chkShowTime", file_path));
-                    app.Default.AutoReplyDelay = int.Parse(GetPrivateProfileStringFake(section, "AutoReplyDelay", file_path));
-
-                    section = "Send";
-                    app.Default.sendEncodeAscii = Convert.ToBoolean(GetPrivateProfileStringFake(section, "sendEncodeAscii", file_path));
-                    app.Default.chkAppendNewLine = Convert.ToBoolean(GetPrivateProfileStringFake(section, "chkAppendNewLine", file_path));
-                    app.Default.RepeatInterval = int.Parse(GetPrivateProfileStringFake(section, "RepeatInterval", file_path));
-
-                    section = "GeneralSend";
-                    app.Default.GeneralSendData = GetPrivateProfileStringFake(section, "GeneralSendData", file_path);
-                    app.Default.LoadFileEnable = Convert.ToBoolean(GetPrivateProfileStringFake(section, "LoadFileEnable", file_path));
-                    app.Default.LoadFilePath = GetPrivateProfileStringFake(section, "LoadFilePath", file_path);
-
-                    section = "QuickSend";
-                    app.Default.QuickSendData.Clear();
-                    app.Default.QuickSendTitle.Clear();
-                    app.Default.QuickSendCount = short.Parse(GetPrivateProfileStringFake(section, "QuickSendCount", file_path));
-                    for (short i = 0; i < app.Default.QuickSendCount; i++)
-                    {
-                        app.Default.QuickSendTitle.Add(GetPrivateProfileStringFake(section, "QuickSendTitle" + i, file_path));
-                        app.Default.QuickSendData.Add(GetPrivateProfileStringFake(section, "QuickSendData" + i, file_path));
-                    }
-
-                    section = "Option";
-                    var cvt = new FontConverter();
-                    app.Default.MinToTray = Convert.ToBoolean(GetPrivateProfileStringFake(section, "MinToTray", file_path));
-                    app.Default.CloseToTray = Convert.ToBoolean(GetPrivateProfileStringFake(section, "CloseToTray", file_path));
-                    app.Default.ReceBackColor1 = System.Drawing.ColorTranslator.FromHtml(GetPrivateProfileStringFake(section, "ReceBackColor1", file_path));
-                    app.Default.ReceForeColor1 = System.Drawing.ColorTranslator.FromHtml(GetPrivateProfileStringFake(section, "ReceForeColor1", file_path));
-                    app.Default.SendBackColor1 = System.Drawing.ColorTranslator.FromHtml(GetPrivateProfileStringFake(section, "SendBackColor1", file_path));
-                    app.Default.SendForeColor1 = System.Drawing.ColorTranslator.FromHtml(GetPrivateProfileStringFake(section, "SendForeColor1", file_path));
-                    app.Default.ReceFont1 = cvt.ConvertFromString(GetPrivateProfileStringFake(section, "ReceFont1", file_path)) as Font;
-                    app.Default.SendFont1 = cvt.ConvertFromString(GetPrivateProfileStringFake(section, "SendFont1", file_path)) as Font;
-
-                    app.Default.ReceBackColor2 = System.Drawing.ColorTranslator.FromHtml(GetPrivateProfileStringFake(section, "ReceBackColor2", file_path));
-                    app.Default.ReceForeColor2 = System.Drawing.ColorTranslator.FromHtml(GetPrivateProfileStringFake(section, "ReceForeColor2", file_path));
-                    app.Default.SendBackColor2 = System.Drawing.ColorTranslator.FromHtml(GetPrivateProfileStringFake(section, "SendBackColor2", file_path));
-                    app.Default.SendForeColor2 = System.Drawing.ColorTranslator.FromHtml(GetPrivateProfileStringFake(section, "SendForeColor2", file_path));
-                    app.Default.ReceFont2 = cvt.ConvertFromString(GetPrivateProfileStringFake(section, "ReceFont2", file_path)) as Font;
-                    app.Default.SendFont2 = cvt.ConvertFromString(GetPrivateProfileStringFake(section, "SendFont2", file_path)) as Font;
-                    app.Default.QuitConfirm = Convert.ToBoolean(GetPrivateProfileStringFake(section, "QuitConfirm", file_path));
-                    app.Default.HightLightEnable = Convert.ToBoolean(GetPrivateProfileStringFake(section, "HightLightEnable", file_path));
-                    app.Default.SendDisplayEnable = Convert.ToBoolean(GetPrivateProfileStringFake(section, "SendDisplayEnable", file_path));
-                    app.Default.CommentEnable = Convert.ToBoolean(GetPrivateProfileStringFake(section, "CommentEnable", file_path));
-
-                    app.Default.FrameInterval = int.Parse(GetPrivateProfileStringFake(section, "FrameInterval", file_path));
-                    app.Default.chkTimeNewLine = Convert.ToBoolean(GetPrivateProfileStringFake(section, "TimeNewline", file_path));
-                    app.Default.Send2FileEnable = Convert.ToBoolean(GetPrivateProfileStringFake(section, "Send2FileEnable", file_path));
-                    app.Default.Send2NewLineEnable = Convert.ToBoolean(GetPrivateProfileStringFake(section, "Send2NewLineEnable", file_path));
-
-                    app.Default.HighLightRed = GetPrivateProfileStringFake(section, "HighLightRed", file_path);
-                    app.Default.HighLightGreen = GetPrivateProfileStringFake(section, "HighLightGreen", file_path);
-                    app.Default.HighLightYellow = GetPrivateProfileStringFake(section, "HighLightYellow", file_path);
-                    app.Default.HighLightBlue = GetPrivateProfileStringFake(section, "HighLightBlue", file_path);
-                    app.Default.HighLightMagenta = GetPrivateProfileStringFake(section, "HighLightMagenta", file_path);
-                    app.Default.HighLightCyan = GetPrivateProfileStringFake(section, "HighLightCyan", file_path);
-                    app.Default.HighLightOrange = GetPrivateProfileStringFake(section, "HighLightOrange", file_path);
-
-                    LoadLastConfig();
-                    MessageBox.Show("导入配置文件成功！", "O-ComTool 提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                catch 
-                {
-                    MessageBox.Show("导入配置文件失败！","O-ComTool 错误",MessageBoxButtons.OK,MessageBoxIcon.Error);
-                }
-            }
-            else
-            {
-                //btnEditFile.Enabled = false;
-                //cmbLoadFile.Items.Clear();
                 return;
+            }
+            string file_path = openFileDialog1.FileName;
+
+            try
+            {
+                // 标量配置项统一读入
+                var cvt = new FontConverter();
+                foreach (var f in BuildIniFields(cvt))
+                {
+                    f.Set(GetPrivateProfileStringFake(f.Section, f.Key, file_path));
+                }
+
+                // 快捷发送列表
+                const string qs = "QuickSend";
+                app.Default.QuickSendTitle.Clear();
+                app.Default.QuickSendData.Clear();
+                app.Default.QuickSendCount = short.Parse(GetPrivateProfileStringFake(qs, "QuickSendCount", file_path));
+                for (short i = 0; i < app.Default.QuickSendCount; i++)
+                {
+                    app.Default.QuickSendTitle.Add(GetPrivateProfileStringFake(qs, "QuickSendTitle" + i, file_path));
+                    app.Default.QuickSendData.Add(GetPrivateProfileStringFake(qs, "QuickSendData" + i, file_path));
+                }
+
+                LoadLastConfig();
+                MessageBox.Show("导入配置文件成功！", "O-ComTool 提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch
+            {
+                MessageBox.Show("导入配置文件失败！", "O-ComTool 错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
