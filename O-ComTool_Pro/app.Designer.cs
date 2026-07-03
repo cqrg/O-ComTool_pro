@@ -12,7 +12,7 @@ namespace O_ComTool_Pro {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "17.14.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.9.0.0")]
     internal sealed partial class app : global::System.Configuration.ApplicationSettingsBase {
         
         private static app defaultInstance = ((app)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new app())));
@@ -349,10 +349,10 @@ namespace O_ComTool_Pro {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("<?xml version=\"1.0\" encoding=\"utf-16\"?>\n<ArrayOfString xmlns:xsi=\"http://www.w3.o" +
-            "rg/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n  <str" +
-            "ing>Title1</string>\n  <string>Title2</string>\n  <string>Title3</string>\n</ArrayO" +
-            "fString>")]
+        [global::System.Configuration.DefaultSettingValueAttribute("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<ArrayOfString xmlns:xsi=\"http://www.w3." +
+            "org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <s" +
+            "tring>Title1</string>\r\n  <string>Title2</string>\r\n  <string>Title3</string>\r\n</A" +
+            "rrayOfString>")]
         public global::System.Collections.Specialized.StringCollection QuickSendTitle {
             get {
                 return ((global::System.Collections.Specialized.StringCollection)(this["QuickSendTitle"]));
@@ -364,10 +364,10 @@ namespace O_ComTool_Pro {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("<?xml version=\"1.0\" encoding=\"utf-16\"?>\n<ArrayOfString xmlns:xsi=\"http://www.w3.o" +
-            "rg/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n  <str" +
-            "ing>Data1</string>\n  <string>Data2</string>\n  <string>Data3</string>\n</ArrayOfSt" +
-            "ring>")]
+        [global::System.Configuration.DefaultSettingValueAttribute("<?xml version=\"1.0\" encoding=\"utf-16\"?>\r\n<ArrayOfString xmlns:xsi=\"http://www.w3." +
+            "org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <s" +
+            "tring>Data1</string>\r\n  <string>Data2</string>\r\n  <string>Data3</string>\r\n</Arra" +
+            "yOfString>")]
         public global::System.Collections.Specialized.StringCollection QuickSendData {
             get {
                 return ((global::System.Collections.Specialized.StringCollection)(this["QuickSendData"]));
