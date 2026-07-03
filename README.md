@@ -40,7 +40,7 @@ O-Comtool是一款简单易用的串口调试助手，本软件提供了丰富�
 ## 环境
 
 * Visual Studio 2017
-* .NET Framework 4.5
+* .NET Framework 4.8
 * Nuget package:FCTB
 ## 运行
 * 直接打开`O-ComTool_Pro.sln`即可

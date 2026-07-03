@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-O-ComTool 是一款 Windows 桌面串口调试助手，使用 **C# / Windows Forms / .NET Framework 4.5** 编写。目标是辅助嵌入式开发调试：串口收发、ASCII/HEX 显示、报文校验和与 CRC、关键字正则高亮、快捷发送、配置导入导出等。
+O-ComTool 是一款 Windows 桌面串口调试助手，使用 **C# / Windows Forms / .NET Framework 4.8** 编写。目标是辅助嵌入式开发调试：串口收发、ASCII/HEX 显示、报文校验和与 CRC、关键字正则高亮、快捷发送、配置导入导出等。
 
 代码由作者自述为"面向搜索引擎编程"，质量一般，`MainForm.cs` 是近 90KB 的单体核心，绝大多数业务逻辑集中于此。所有 UI 文本与注释均为简体中文。
 
 ## 构建与运行
 
 - **工具链**：Visual Studio（README 标注 2017，`.sln` 兼容 2013+）/ MSBuild。
-- **目标框架**：.NET Framework 4.5，`OutputType = WinExe`，`AnyCPU`。
+- **目标框架**：.NET Framework 4.8，`OutputType = WinExe`，`AnyCPU`。
 - **解决方案入口**：`O-ComTool_Pro.sln` → 项目 `O-ComTool_Pro/O-ComTool_Pro.csproj`。
 - **命令行构建**（在仓库根目录）：
   - Debug：`msbuild O-ComTool_Pro.sln /p:Configuration=Debug`
