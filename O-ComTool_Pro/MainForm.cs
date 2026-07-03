@@ -488,25 +488,48 @@ namespace O_ComTool_Pro
             StartCheckVersion();
             LoadLastConfig();
 
-            // Modbus 面板
+            // Modbus 面板（在"工具"菜单的子窗口中打开）
             _modbusAggregator = new Modbus.ModbusReceiveAggregator();
             _modbusAggregator.OnFrame += ModbusAggregator_OnFrame;
             _modbusTimeoutTimer = new System.Windows.Forms.Timer { Interval = 500 };
             _modbusTimeoutTimer.Tick += ModbusTimeout_Tick;
             _modbusPanel = new Modbus.ModbusPanel();
             _modbusPanel.Bind(this);
-            TabPage tbpModbus = new TabPage("Modbus");
-            _modbusPanel.Dock = DockStyle.Fill;
-            tbpModbus.Controls.Add(_modbusPanel);
-            tabControl1.TabPages.Add(tbpModbus);
 
-            // 图表面板
+            // 图表面板（同上，子窗口打开）
             _chartPanel = new Chart.ChartPanel();
             ResponseReceived += ModbusResponse_ForChart;   // Modbus 响应喂给图表
-            TabPage tbpChart = new TabPage("图表");
-            _chartPanel.Dock = DockStyle.Fill;
-            tbpChart.Controls.Add(_chartPanel);
-            tabControl1.TabPages.Add(tbpChart);
+        }
+
+        // ---- 工具菜单：Modbus / 图表 子窗口 ----
+        private Form _modbusForm;
+        private Form _chartForm;
+
+        private void tsmModbus_Click(object sender, EventArgs e) { ShowToolForm(ref _modbusForm, "Modbus RTU 主机", _modbusPanel, 800, 420); }
+        private void tsmChart_Click(object sender, EventArgs e) { ShowToolForm(ref _chartForm, "实时图表", _chartPanel, 800, 460); }
+
+        /// <summary>把一个 UserControl 宿主到独立的非模态子窗口；关闭时隐藏而非释放，保留面板状态。</summary>
+        private void ShowToolForm(ref Form form, string title, Control panel, int w, int h)
+        {
+            Form f = form;
+            if (f == null || f.IsDisposed)
+            {
+                f = new Form
+                {
+                    Text = title,
+                    Width = w,
+                    Height = h,
+                    StartPosition = FormStartPosition.CenterParent,
+                    ShowInTaskbar = false,
+                    Owner = this
+                };
+                f.FormClosing += (s, ev) => { ev.Cancel = true; f.Hide(); };
+                panel.Dock = DockStyle.Fill;
+                if (panel.Parent == null) f.Controls.Add(panel);
+                form = f;
+            }
+            f.Show();
+            f.BringToFront();
         }
 
         private void ModbusResponse_ForChart(Modbus.ModbusResponse r)

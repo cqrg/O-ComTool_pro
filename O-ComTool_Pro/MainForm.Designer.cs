@@ -123,6 +123,8 @@
             this.tsmFormat = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmAscii = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmChangeDisplay = new System.Windows.Forms.ToolStripMenuItem();
+            this.tsmModbus = new System.Windows.Forms.ToolStripMenuItem();
+            this.tsmChart = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmHomePage = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmUpdate = new System.Windows.Forms.ToolStripMenuItem();
@@ -1189,7 +1191,9 @@
             this.tsmDevMgmt,
             this.tsmFormat,
             this.tsmAscii,
-            this.tsmChangeDisplay});
+            this.tsmChangeDisplay,
+            this.tsmModbus,
+            this.tsmChart});
             this.tsmTool.Image = global::O_ComTool_Pro.Properties.Resources.Tools_48px;
             this.tsmTool.Name = "tsmTool";
             this.tsmTool.Size = new System.Drawing.Size(75, 21);
@@ -1242,9 +1246,23 @@
             this.tsmChangeDisplay.Size = new System.Drawing.Size(153, 22);
             this.tsmChangeDisplay.Text = "显示切换(&D)";
             this.tsmChangeDisplay.Click += new System.EventHandler(this.tsmChangeDisplay_Click);
-            // 
+            //
+            // tsmModbus
+            //
+            this.tsmModbus.Name = "tsmModbus";
+            this.tsmModbus.Size = new System.Drawing.Size(153, 22);
+            this.tsmModbus.Text = "Modbus 主机(&M)";
+            this.tsmModbus.Click += new System.EventHandler(this.tsmModbus_Click);
+            //
+            // tsmChart
+            //
+            this.tsmChart.Name = "tsmChart";
+            this.tsmChart.Size = new System.Drawing.Size(153, 22);
+            this.tsmChart.Text = "实时图表(&G)";
+            this.tsmChart.Click += new System.EventHandler(this.tsmChart_Click);
+            //
             // tsmHelp
-            // 
+            //
             this.tsmHelp.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tsmHomePage,
             this.tsmUpdate,
@@ -1583,6 +1601,8 @@
         private System.Windows.Forms.ToolStripMenuItem tsmDevMgmt;
         private System.Windows.Forms.ToolStripMenuItem tsmFormat;
         private System.Windows.Forms.ToolStripMenuItem tsmChangeDisplay;
+        private System.Windows.Forms.ToolStripMenuItem tsmModbus;
+        private System.Windows.Forms.ToolStripMenuItem tsmChart;
         private System.Windows.Forms.ToolStripMenuItem tsmHelp;
         private System.Windows.Forms.ToolStripMenuItem tsmExit;
         private System.Windows.Forms.ToolStripMenuItem tsmAscii;
