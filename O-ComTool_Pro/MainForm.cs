@@ -48,7 +48,7 @@ namespace O_ComTool_Pro
         public Font ReceFont2, SendFont2;
         public Color ReceForeColor2, ReceBackColor2, SendForeColor2, SendBackColor2;
 
-        bool display_plan1_enable = !app.Default.DisplayPlan1Enable;
+        bool display_plan1_active = app.Default.DisplayPlan1Enable;   // true=当前显示方案1
 
         //
         public int frame_interval;
@@ -138,15 +138,72 @@ namespace O_ComTool_Pro
         void ShowCurStatus(bool ok, string message)
         {
             tssCurstatus.Text = message;
-            if (ok) 
+            if (ok)
             {
                 tssCurstatus.ForeColor = Color.Green;
             }
-            else 
+            else
             {
                 tssCurstatus.ForeColor = Color.Red;
             }
         }
+
+        /// <summary>
+        /// 刷新右下角收发计数与收发比。统一各处计数显示逻辑，含除零保护。
+        /// </summary>
+        void UpdateCounters()
+        {
+            string unit = FrameOrByte ? "frames" : "bytes";
+            int rx = FrameOrByte ? spFrameRxCount : spRxCount;
+            int tx = FrameOrByte ? spFrameTxCount : spTxCount;
+            tssRxCount.Text = "RX: " + rx + " " + unit;
+            tssTxCount.Text = "TX: " + tx + " " + unit;
+            tssLabRateValue.Text = (tx > 0) ? Math.Round(rx * 100.0 / tx, 2) + "%" : "N/A";
+        }
+
+        /// <summary>
+        /// 从文本中提取连续的 2 位十六进制字节序列（忽略非 hex 字符）。
+        /// 统一右键菜单与发送路径的解析逻辑。
+        /// </summary>
+        static byte[] ParseHexBytes(string text)
+        {
+            MatchCollection mc = Regex.Matches(text, @"(?i)[\da-f]{2}");
+            byte[] bytes = new byte[mc.Count];
+            int i = 0;
+            foreach (Match m in mc)
+            {
+                bytes[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);
+            }
+            return bytes;
+        }
+
+        /// <summary>
+        /// 应用显示方案（true=方案1，false=方案2）到接收区与发送区。
+        /// 消除 plan1/plan2 在多处复制的字体/颜色赋值，避免极性反转 bug。
+        /// </summary>
+        void ApplyDisplayPlan(bool plan1)
+        {
+            Font receFont, sendFont;
+            Color receFg, receBg, sendFg, sendBg;
+            if (plan1)
+            {
+                receFont = ReceFont1; receFg = ReceForeColor1; receBg = ReceBackColor1;
+                sendFont = SendFont1; sendFg = SendForeColor1; sendBg = SendBackColor1;
+            }
+            else
+            {
+                receFont = ReceFont2; receFg = ReceForeColor2; receBg = ReceBackColor2;
+                sendFont = SendFont2; sendFg = SendForeColor2; sendBg = SendBackColor2;
+            }
+            fctbReceive.Font = receFont;
+            fctbReceive.ForeColor = receFg;
+            fctbReceive.BackColor = receBg;
+            cur_color = receFg;
+            txbSend.Font = sendFont;
+            txbSend.ForeColor = sendFg;
+            txbSend.BackColor = sendBg;
+        }
+
 
         /// <summary>
         /// 加载文件
@@ -318,34 +375,7 @@ namespace O_ComTool_Pro
             SendBackColor2 = app.Default.SendBackColor2;
 
                 // 是否为方案1
-            if (app.Default.DisplayPlan1Enable == true)
-            {
-                //rtbReceive.Font = ReceFont1;
-                //cur_color = rtbReceive.ForeColor = ReceForeColor1;
-                //rtbReceive.BackColor = ReceBackColor1;
-
-                fctbReceive.Font = ReceFont1;
-                cur_color = fctbReceive.ForeColor = ReceForeColor1;
-                fctbReceive.BackColor = ReceBackColor1;
-
-                txbSend.Font = SendFont1;
-                txbSend.ForeColor = SendForeColor1;
-                txbSend.BackColor = SendBackColor1;
-            }
-            else 
-            {
-                //rtbReceive.Font = ReceFont2;
-                //cur_color = rtbReceive.ForeColor = ReceForeColor2;
-                //rtbReceive.BackColor = ReceBackColor2;
-
-                fctbReceive.Font = ReceFont2;
-                cur_color = fctbReceive.ForeColor = ReceForeColor2;
-                fctbReceive.BackColor = ReceBackColor2;
-
-                txbSend.Font = SendFont2;
-                txbSend.ForeColor = SendForeColor2;
-                txbSend.BackColor = SendBackColor2;
-            }
+            ApplyDisplayPlan(app.Default.DisplayPlan1Enable == true);
 
             // 选项
                 // 基本
@@ -441,27 +471,8 @@ namespace O_ComTool_Pro
             Option option = new Option(this);
             option.ShowDialog();
 
-            if (display_plan1_enable == false)
-            {
-                fctbReceive.Font = ReceFont1;
-                cur_color = fctbReceive.ForeColor = ReceForeColor1;
-                fctbReceive.BackColor = ReceBackColor1;
-
-                txbSend.Font = SendFont1;
-                txbSend.ForeColor = SendForeColor1;
-                txbSend.BackColor = SendBackColor1;
-            }
-            else
-            {
-                fctbReceive.Font = ReceFont2;
-                cur_color = fctbReceive.ForeColor = ReceForeColor2;
-                fctbReceive.BackColor = ReceBackColor2;
-
-                txbSend.Font = SendFont2;
-                txbSend.ForeColor = SendForeColor2;
-                txbSend.BackColor = SendBackColor2;
-            }
-            
+            // 选项关闭后按当前方案刷新字体/颜色
+            ApplyDisplayPlan(display_plan1_active);
         }
 
         private void tsmDonate_Click(object sender, EventArgs e)
@@ -562,34 +573,18 @@ namespace O_ComTool_Pro
 
             if (radHexSend.Checked)//十六进制发送
             {
-                int i = 0;
-                MatchCollection mc = Regex.Matches(TempStr, @"(?i)[\da-f]{2}");//正则获取符合十六进制规则的数据，如果数据错误则跳过该数据
-                byte[] bytesToWrite = new byte[mc.Count];//定义新bytes[]长度为正则匹配出的长度
-
-                foreach (Match m in mc)//遍历所有mc，并将其转换成十六进制
-                {
-                    bytesToWrite[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);//赋值并累加
-                }
-                serialPort1.Write(bytesToWrite, 0, mc.Count);
+                byte[] bytesToWrite = ParseHexBytes(TempStr);
+                serialPort1.Write(bytesToWrite, 0, bytesToWrite.Length);
 
                 if (send_display_enable == true && chkAutoLine.Checked == true)
                 {
-                    SendDisplay(bytesToWrite, mc.Count);
+                    SendDisplay(bytesToWrite, bytesToWrite.Length);
                 }
 
-                ShowCurStatus(true, mc.Count + "字节已发送");
-                spTxCount += mc.Count;
+                ShowCurStatus(true, bytesToWrite.Length + "字节已发送");
+                spTxCount += bytesToWrite.Length;
                 spFrameTxCount += 1;
-                if (FrameOrByte == true)
-                {
-                    tssTxCount.Text = "TX: " + spFrameTxCount + " frames";
-                    tssLabRateValue.Text = Math.Round((spFrameRxCount * 1.0) * 100 / (spFrameTxCount), 2) + "%";
-                }
-                else
-                {
-                    tssTxCount.Text = "TX: " + spTxCount + " bytes";
-                    tssLabRateValue.Text = Math.Round((spRxCount * 1.0) * 100 / (spTxCount), 2) + "%";
-                }
+                UpdateCounters();
             }
             else//ascii码发送
             {
@@ -605,16 +600,7 @@ namespace O_ComTool_Pro
                 ShowCurStatus(true, bytesToWrite.Length + "字节已发送");
                 spTxCount += bytesToWrite.Length;
                 spFrameTxCount += 1;
-                if (FrameOrByte == true)
-                {
-                    tssTxCount.Text = "TX: " + spFrameTxCount + " frames";
-                    tssLabRateValue.Text = Math.Round((spFrameRxCount * 1.0) * 100 / (spFrameTxCount), 2) + "%";
-                }
-                else
-                {
-                    tssTxCount.Text = "TX: " + spTxCount + " bytes";
-                    tssLabRateValue.Text = Math.Round((spRxCount * 1.0) * 100 / (spTxCount), 2) + "%";
-                }
+                UpdateCounters();
             }
 
             
@@ -788,20 +774,10 @@ namespace O_ComTool_Pro
                 spRxCount += RecLen;
                 spFrameRxCount += 1;
 
-                int rxCountForRate = FrameOrByte ? spFrameRxCount : spRxCount;
-                int txCountForRate = FrameOrByte ? spFrameTxCount : spTxCount;
-                string rateText = (txCountForRate > 0)
-                    ? Math.Round(rxCountForRate * 100.0 / txCountForRate, 2) + "%"
-                    : "N/A";
-                string rxCountText = FrameOrByte
-                    ? "RX: " + spFrameRxCount.ToString() + " frames"
-                    : "RX: " + spRxCount.ToString() + " bytes";
-
                 this.Invoke((EventHandler)(delegate
                 {
                     if (this.IsDisposed) return;
-                    tssRxCount.Text = rxCountText;
-                    tssLabRateValue.Text = rateText;
+                    UpdateCounters();
 
                     StringBuilder tmp_rx_sb = new StringBuilder(50);
                     if (chkShowTime.Checked == true)
@@ -1059,22 +1035,8 @@ namespace O_ComTool_Pro
 
         private void tssImageChange_Click(object sender, EventArgs e)
         {
-            if (FrameOrByte == true)
-            {
-                tssRxCount.Text = "RX: " + spRxCount.ToString() + " bytes";
-                tssTxCount.Text = "TX: " + spTxCount.ToString() + " bytes";
-                tssLabRateValue.Text = Math.Round((spRxCount * 1.0) * 100 / (spTxCount), 2) + "%";
-                FrameOrByte = false;
-                return;
-            }
-            else
-            {
-                tssRxCount.Text = "RX: " + spFrameRxCount.ToString() + " frames";
-                tssTxCount.Text = "TX: " + spFrameTxCount.ToString() + " frames";
-                tssLabRateValue.Text = Math.Round((spFrameRxCount * 1.0) * 100 / (spFrameTxCount), 2) + "%";
-                FrameOrByte = true;
-                return;
-            }
+            FrameOrByte = !FrameOrByte;
+            UpdateCounters();
         }
 
         private void tssLabReset_Click(object sender, EventArgs e)
@@ -1083,17 +1045,7 @@ namespace O_ComTool_Pro
             spTxCount = 0;
             spFrameRxCount = 0;
             spFrameTxCount = 0;
-            if (FrameOrByte == true)
-            {
-                tssRxCount.Text = "RX: 0 frames";
-                tssTxCount.Text = "TX: 0 frames";
-            }
-            else
-            {
-                tssRxCount.Text = "RX: 0 bytes";
-                tssTxCount.Text = "TX: 0 bytes";
-            }
-            tssLabRateValue.Text = "NULL";
+            UpdateCounters();
         }
 
         private void chkRepeatSend_CheckedChanged(object sender, EventArgs e)
@@ -1238,41 +1190,10 @@ namespace O_ComTool_Pro
             System.Diagnostics.Process.Start("http://www.ifreehub.com");
         }
 
-        //bool display_plan1_enable = true;
         private void tsmChangeDisplay_Click(object sender, EventArgs e)
         {
-            if (display_plan1_enable == true)
-            {
-                //rtbReceive.Font = ReceFont1;
-                //cur_color = rtbReceive.ForeColor = ReceForeColor1;
-                //rtbReceive.BackColor = ReceBackColor1;
-
-                fctbReceive.Font = ReceFont1;
-                cur_color = fctbReceive.ForeColor = ReceForeColor1;
-                fctbReceive.BackColor = ReceBackColor1;
-
-                txbSend.Font = SendFont1;
-                txbSend.ForeColor = SendForeColor1;
-                txbSend.BackColor = SendBackColor1;
-
-                display_plan1_enable = false;
-            }
-            else
-            {
-                //rtbReceive.Font = ReceFont2;
-                //cur_color = rtbReceive.ForeColor = ReceForeColor2;
-                //rtbReceive.BackColor = ReceBackColor2;
-
-                fctbReceive.Font = ReceFont2;
-                cur_color = fctbReceive.ForeColor = ReceForeColor2;
-                fctbReceive.BackColor = ReceBackColor2;
-
-                txbSend.Font = SendFont2;
-                txbSend.ForeColor = SendForeColor2;
-                txbSend.BackColor = SendBackColor2;
-                display_plan1_enable = true;
-            }
-            
+            display_plan1_active = !display_plan1_active;
+            ApplyDisplayPlan(display_plan1_active);
         }
 
         private void MainForm_SizeChanged(object sender, EventArgs e)
@@ -1328,7 +1249,7 @@ namespace O_ComTool_Pro
             app.Default.QuickSendTitle.Clear();
             app.Default.QuickSendData.Clear();
 
-            app.Default.DisplayPlan1Enable = !display_plan1_enable;
+            app.Default.DisplayPlan1Enable = display_plan1_active;
 
             for (int i = 0; i < quicksend_list.Count; i++)
             {
@@ -1440,15 +1361,9 @@ namespace O_ComTool_Pro
 
         private void cmsCheckSum_Click(object sender, EventArgs e)
         {
-            int i = 0;
             string selectText = ((FastColoredTextBox)contextMenuStrip2.SourceControl).SelectedText;
-            MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            byte[] bytesToCheck = new byte[mc.Count];
-            foreach (Match m in mc)//遍历所有mc，并将其转换成十六进制
-            {
-                bytesToCheck[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);//赋值并累加
-            }
-            MessageBox.Show("校验和：0x" + RightKeyCheckSum(bytesToCheck, i).ToString("X2"), "O-ComTool 校验和", MessageBoxButtons.OK, MessageBoxIcon.None);
+            byte[] bytesToCheck = ParseHexBytes(selectText);
+            MessageBox.Show("校验和：0x" + RightKeyCheckSum(bytesToCheck, bytesToCheck.Length).ToString("X2"), "O-ComTool 校验和", MessageBoxButtons.OK, MessageBoxIcon.None);
         }
 
         byte RightKeyXOR(byte[] buffer, int length)
@@ -1460,15 +1375,9 @@ namespace O_ComTool_Pro
         }
         private void cmsXor_Click(object sender, EventArgs e)
         {
-            int i = 0;
             string selectText = ((FastColoredTextBox)contextMenuStrip2.SourceControl).SelectedText;
-            MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            byte[] bytesToCheck = new byte[mc.Count];
-            foreach (Match m in mc)//遍历所有mc，并将其转换成十六进制
-            {
-                bytesToCheck[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);//赋值并累加
-            }
-            MessageBox.Show("异或值：0x" + RightKeyXOR(bytesToCheck, i).ToString("X2"), "O-ComTool 异或值", MessageBoxButtons.OK, MessageBoxIcon.None);
+            byte[] bytesToCheck = ParseHexBytes(selectText);
+            MessageBox.Show("异或值：0x" + RightKeyXOR(bytesToCheck, bytesToCheck.Length).ToString("X2"), "O-ComTool 异或值", MessageBoxButtons.OK, MessageBoxIcon.None);
         }
 
         private void contextMenuStrip2_Opening(object sender, CancelEventArgs e)
@@ -1508,26 +1417,19 @@ namespace O_ComTool_Pro
 
         private void cmsCalcLength_Click(object sender, EventArgs e)
         {
-            string str;
             string selectText = ((FastColoredTextBox)contextMenuStrip2.SourceControl).SelectedText;
-            MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            str = "ASCII长度：" + selectText.Length + " (0x" + selectText.Length.ToString("X2") + ")" + " Bytes\n";
-            str += "  HEX长度：" + mc.Count + " (0x" + mc.Count.ToString("X2") + ")" + " Bytes\n";
-            
+            int hexLen = ParseHexBytes(selectText).Length;
+            string str = "ASCII长度：" + selectText.Length + " (0x" + selectText.Length.ToString("X2") + ")" + " Bytes\n";
+            str += "  HEX长度：" + hexLen + " (0x" + hexLen.ToString("X2") + ")" + " Bytes\n";
+
             MessageBox.Show(str, "O-ComTool 字符长度", MessageBoxButtons.OK, MessageBoxIcon.None);
         }
 
         private void cmsH2A_Click(object sender, EventArgs e)
         {
-            int i = 0;
             string selectText = ((FastColoredTextBox)contextMenuStrip2.SourceControl).SelectedText;
-            MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            byte[] bytesToCheck = new byte[mc.Count];
-            foreach (Match m in mc)//遍历所有mc，并将其转换成十六进制
-            {
-                bytesToCheck[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);//赋值并累加
-            }
-            string str = Encoding.UTF8.GetString(bytesToCheck, 0, mc.Count);
+            byte[] bytesToCheck = ParseHexBytes(selectText);
+            string str = Encoding.UTF8.GetString(bytesToCheck, 0, bytesToCheck.Length);
             if (MessageBox.Show("Hex2Ascii：" + str, "O-ComTool Hex2Ascii", MessageBoxButtons.OKCancel, MessageBoxIcon.None) == DialogResult.OK)
             {
                 Clipboard.SetText(str);
@@ -1553,16 +1455,10 @@ namespace O_ComTool_Pro
 
         private void cmsHexFormat_Click(object sender, EventArgs e)
         {
-            int i = 0;
             string selectText = ((FastColoredTextBox)contextMenuStrip2.SourceControl).SelectedText;
-            MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            byte[] bytesToCheck = new byte[mc.Count];
-            foreach (Match m in mc)//遍历所有mc，并将其转换成十六进制
-            {
-                bytesToCheck[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);//赋值并累加
-            }
+            byte[] bytesToCheck = ParseHexBytes(selectText);
 
-            fctbReceive.SelectedText = GetHexString(bytesToCheck, 0, mc.Count).ToString();
+            fctbReceive.SelectedText = GetHexString(bytesToCheck, 0, bytesToCheck.Length).ToString();
         }
 
         private void contextMenuStrip3_Opening(object sender, CancelEventArgs e)
@@ -1626,26 +1522,9 @@ namespace O_ComTool_Pro
 
         private void cmstbH2A_Click(object sender, EventArgs e)
         {
-            //int i = 0;
-            //string selectText = ((TextBox)contextMenuStrip3.SourceControl).SelectedText;
-            //MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            //byte[] bytesToCheck = new byte[mc.Count];
-            //foreach (Match m in mc)//遍历所有mc，并将其转换成十六进制
-            //{
-            //    bytesToCheck[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);//赋值并累加
-            //}
-
-            //MessageBox.Show("Hex2Ascii：" + Encoding.UTF8.GetString(bytesToCheck, 0, mc.Count), "O-ComTool Hex2Ascii", MessageBoxButtons.OK, MessageBoxIcon.None);
-
-            int i = 0;
             string selectText = ((TextBox)contextMenuStrip3.SourceControl).SelectedText;
-            MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            byte[] bytesToCheck = new byte[mc.Count];
-            foreach (Match m in mc)//遍历所有mc，并将其转换成十六进制
-            {
-                bytesToCheck[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);//赋值并累加
-            }
-            string str = Encoding.UTF8.GetString(bytesToCheck, 0, mc.Count);
+            byte[] bytesToCheck = ParseHexBytes(selectText);
+            string str = Encoding.UTF8.GetString(bytesToCheck, 0, bytesToCheck.Length);
             if (MessageBox.Show("Hex2Ascii：" + str, "O-ComTool Hex2Ascii", MessageBoxButtons.OKCancel, MessageBoxIcon.None) == DialogResult.OK)
             {
                 Clipboard.SetText(str);
@@ -1682,33 +1561,18 @@ namespace O_ComTool_Pro
 
         private void cmstbHexFormat_Click(object sender, EventArgs e)
         {
-            int i = 0;
             string selectText = ((TextBox)contextMenuStrip3.SourceControl).SelectedText;
-            MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            byte[] bytesToCheck = new byte[mc.Count];
-            foreach (Match m in mc)//遍历所有mc，并将其转换成十六进制
-            {
-                bytesToCheck[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);//赋值并累加
-            }
+            byte[] bytesToCheck = ParseHexBytes(selectText);
 
-            txbSend.SelectedText = GetHexString(bytesToCheck, 0, mc.Count).ToString();
+            txbSend.SelectedText = GetHexString(bytesToCheck, 0, bytesToCheck.Length).ToString();
         }
 
         private void cmstbCalcLength_Click(object sender, EventArgs e)
         {
-            //string str;
-            //string selectText = ((TextBox)contextMenuStrip3.SourceControl).SelectedText;
-            //MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            //str = "ASCII长度：" + selectText.Length + " (0x" + selectText.Length.ToString("X2") + ")" + " Bytes\n";
-            //str += "  HEX长度：" + mc.Count + " (0x" + mc.Count.ToString("X2") + ")" + " Bytes\n";
-
-            //MessageBox.Show(str, "O-ComTool 字符长度", MessageBoxButtons.OK, MessageBoxIcon.None);
-
-            string str;
             string selectText = ((TextBox)contextMenuStrip3.SourceControl).SelectedText;
-            MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            str = "ASCII长度：" + selectText.Length + " (0x" + selectText.Length.ToString("X2") + ")" + " Bytes\n";
-            str += "  HEX长度：" + mc.Count + " (0x" + mc.Count.ToString("X2") + ")" + " Bytes\n";
+            int hexLen = ParseHexBytes(selectText).Length;
+            string str = "ASCII长度：" + selectText.Length + " (0x" + selectText.Length.ToString("X2") + ")" + " Bytes\n";
+            str += "  HEX长度：" + hexLen + " (0x" + hexLen.ToString("X2") + ")" + " Bytes\n";
 
             MessageBox.Show(str, "O-ComTool 字符长度", MessageBoxButtons.OK, MessageBoxIcon.None);
 
@@ -1716,28 +1580,16 @@ namespace O_ComTool_Pro
 
         private void cmstbCheckSum_Click(object sender, EventArgs e)
         {
-            int i = 0;
             string selectText = ((TextBox)contextMenuStrip3.SourceControl).SelectedText;
-            MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            byte[] bytesToCheck = new byte[mc.Count];
-            foreach (Match m in mc)//遍历所有mc，并将其转换成十六进制
-            {
-                bytesToCheck[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);//赋值并累加
-            }
-            MessageBox.Show("校验和：0x" + RightKeyCheckSum(bytesToCheck, i).ToString("X2"), "O-ComTool 校验和", MessageBoxButtons.OK, MessageBoxIcon.None);
+            byte[] bytesToCheck = ParseHexBytes(selectText);
+            MessageBox.Show("校验和：0x" + RightKeyCheckSum(bytesToCheck, bytesToCheck.Length).ToString("X2"), "O-ComTool 校验和", MessageBoxButtons.OK, MessageBoxIcon.None);
         }
 
         private void cmstbXor_Click(object sender, EventArgs e)
         {
-            int i = 0;
             string selectText = ((TextBox)contextMenuStrip3.SourceControl).SelectedText;
-            MatchCollection mc = Regex.Matches(selectText, @"(?i)[\da-f]{2}");
-            byte[] bytesToCheck = new byte[mc.Count];
-            foreach (Match m in mc)//遍历所有mc，并将其转换成十六进制
-            {
-                bytesToCheck[i++] = byte.Parse(m.Value, System.Globalization.NumberStyles.HexNumber);//赋值并累加
-            }
-            MessageBox.Show("异或值：0x" + RightKeyXOR(bytesToCheck, i).ToString("X2"), "O-ComTool 异或值", MessageBoxButtons.OK, MessageBoxIcon.None);
+            byte[] bytesToCheck = ParseHexBytes(selectText);
+            MessageBox.Show("异或值：0x" + RightKeyXOR(bytesToCheck, bytesToCheck.Length).ToString("X2"), "O-ComTool 异或值", MessageBoxButtons.OK, MessageBoxIcon.None);
         }
 
         private void cmsSaveCur_Click(object sender, EventArgs e)
