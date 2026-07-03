@@ -84,12 +84,6 @@
     <Compile Include="CheckUpdate.Designer.cs">
       <DependentUpon>CheckUpdate.cs</DependentUpon>
     </Compile>
-    <Compile Include="Donate.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Donate.Designer.cs">
-      <DependentUpon>Donate.cs</DependentUpon>
-    </Compile>
     <Compile Include="Format.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -154,9 +148,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="CheckUpdate.resx">
       <DependentUpon>CheckUpdate.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Donate.resx">
-      <DependentUpon>Donate.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Format.resx">
       <DependentUpon>Format.cs</DependentUpon>
@@ -244,9 +235,6 @@
     <None Include="Resources\About_48px.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Donate_48px.png" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Resources\File_48px.png" />
   </ItemGroup>
   <ItemGroup>
@@ -320,18 +308,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\AsciiTable.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\AliPay.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\WechatPay.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\AliPay1.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\WechatPay1.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\FastColoredTextBox.dll" />

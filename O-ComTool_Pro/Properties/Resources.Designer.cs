@@ -99,27 +99,7 @@ namespace O_ComTool_Pro.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
-        
-        /// <summary>
-        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
-        /// </summary>
-        internal static System.Drawing.Bitmap AliPay {
-            get {
-                object obj = ResourceManager.GetObject("AliPay", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
-        /// </summary>
-        internal static System.Drawing.Bitmap AliPay1 {
-            get {
-                object obj = ResourceManager.GetObject("AliPay1", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
+
         /// <summary>
         ///   查找 System.Drawing.Bitmap 类型的本地化资源。
         /// </summary>
@@ -229,17 +209,7 @@ namespace O_ComTool_Pro.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
-        
-        /// <summary>
-        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
-        /// </summary>
-        internal static System.Drawing.Bitmap Donate_48px {
-            get {
-                object obj = ResourceManager.GetObject("Donate_48px", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
+
         /// <summary>
         ///   查找 System.Drawing.Bitmap 类型的本地化资源。
         /// </summary>
@@ -466,26 +436,6 @@ namespace O_ComTool_Pro.Properties {
         internal static System.Drawing.Bitmap Updates_48px {
             get {
                 object obj = ResourceManager.GetObject("Updates_48px", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
-        /// </summary>
-        internal static System.Drawing.Bitmap WechatPay {
-            get {
-                object obj = ResourceManager.GetObject("WechatPay", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   查找 System.Drawing.Bitmap 类型的本地化资源。
-        /// </summary>
-        internal static System.Drawing.Bitmap WechatPay1 {
-            get {
-                object obj = ResourceManager.GetObject("WechatPay1", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

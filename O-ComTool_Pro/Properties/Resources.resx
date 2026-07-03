@@ -163,9 +163,6 @@
   <data name="Connect_Red_50px" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Connect_Red_50px.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="AliPay1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\AliPay1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="Sleep_48px" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Sleep_48px.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -214,14 +211,8 @@
   <data name="SubDown_52px" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\SubDown_52px.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="AliPay" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\AliPay.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="Led_Green_50px" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Led_Green_50px.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="WechatPay" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\WechatPay.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Settings_48px" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Settings_48px.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -235,14 +226,8 @@
   <data name="Check_48px" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Check_48px.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Donate_48px" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Donate_48px.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="Add_48px" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Add_48px.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="WechatPay1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\WechatPay1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="FastColoredTextBox" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\FastColoredTextBox.dll;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>

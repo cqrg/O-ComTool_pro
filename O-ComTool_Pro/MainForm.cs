@@ -475,12 +475,6 @@ namespace O_ComTool_Pro
             ApplyDisplayPlan(display_plan1_active);
         }
 
-        private void tsmDonate_Click(object sender, EventArgs e)
-        {
-            Donate donate = new Donate();
-            donate.ShowDialog();
-        }
-
         private void tsmAddNote_Click(object sender, EventArgs e)
         {
             Note note = new Note(this);

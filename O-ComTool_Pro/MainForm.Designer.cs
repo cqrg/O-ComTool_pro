@@ -125,7 +125,6 @@
             this.tsmHomePage = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmUpdate = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmAbout = new System.Windows.Forms.ToolStripMenuItem();
-            this.tsmDonate = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmClearSend = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmClearRece = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
@@ -1082,7 +1081,6 @@
             this.tsmFile,
             this.tsmTool,
             this.tsmHelp,
-            this.tsmDonate,
             this.tsmClearSend,
             this.tsmClearRece});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
@@ -1249,17 +1247,9 @@
             this.tsmAbout.Size = new System.Drawing.Size(117, 22);
             this.tsmAbout.Text = "关于(&A)";
             this.tsmAbout.Click += new System.EventHandler(this.tsmAbout_Click);
-            // 
-            // tsmDonate
-            // 
-            this.tsmDonate.Image = global::O_ComTool_Pro.Properties.Resources.Donate_48px;
-            this.tsmDonate.Name = "tsmDonate";
-            this.tsmDonate.Size = new System.Drawing.Size(77, 21);
-            this.tsmDonate.Text = "捐赠(&D)";
-            this.tsmDonate.Click += new System.EventHandler(this.tsmDonate_Click);
-            // 
+            //
             // tsmClearSend
-            // 
+            //
             this.tsmClearSend.Image = global::O_ComTool_Pro.Properties.Resources.Send_Clear_48px;
             this.tsmClearSend.Name = "tsmClearSend";
             this.tsmClearSend.Size = new System.Drawing.Size(84, 21);
@@ -1564,7 +1554,6 @@
         private System.Windows.Forms.ToolStripMenuItem tsmAscii;
         private System.Windows.Forms.ToolStripMenuItem tsmUpdate;
         private System.Windows.Forms.ToolStripMenuItem tsmAbout;
-        private System.Windows.Forms.ToolStripMenuItem tsmDonate;
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tbpGeneral;
