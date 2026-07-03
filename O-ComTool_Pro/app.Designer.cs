@@ -178,6 +178,30 @@ namespace O_ComTool_Pro {
                 this["chkAppendNewLine"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool chkAppendCheck {
+            get {
+                return ((bool)(this["chkAppendCheck"]));
+            }
+            set {
+                this["chkAppendCheck"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("3")]
+        public int cmbCheckAlgIndex {
+            get {
+                return ((int)(this["cmbCheckAlgIndex"]));
+            }
+            set {
+                this["cmbCheckAlgIndex"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

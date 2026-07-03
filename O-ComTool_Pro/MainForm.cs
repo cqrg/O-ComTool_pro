@@ -178,6 +178,39 @@ namespace O_ComTool_Pro
         }
 
         /// <summary>
+        /// 按指定算法把校验值追加到 data 末尾并返回新数组。
+        /// alg: 0=累加和 1=XOR 2=LRC 3=CRC16-Modbus 4=CRC32 5=FCS。
+        /// 1 字节算法(累加和/XOR/LRC)→1B；CRC16-Modbus→2B 小端(low-high)；
+        /// CRC32→4B 大端；FCS 作用于 hexStr 的 ASCII 字符(BYSerial 风格)→1B。
+        /// </summary>
+        static byte[] AppendCheck(byte[] data, int alg, string hexStr)
+        {
+            int len = data.Length;
+            byte[] tail;
+            switch (alg)
+            {
+                case 0: tail = new byte[] { CrcUtil.Sum(data, len) }; break;
+                case 1: tail = new byte[] { CrcUtil.Xor(data, len) }; break;
+                case 2: tail = new byte[] { CrcUtil.Lrc(data, len) }; break;
+                case 3: tail = CrcUtil.Crc16ModbusBytes(data, len); break;       // 小端
+                case 4:
+                    {
+                        uint c = CrcUtil.Crc32(data, len);
+                        tail = new byte[] {
+                            (byte)((c >> 24) & 0xFF), (byte)((c >> 16) & 0xFF),
+                            (byte)((c >> 8) & 0xFF), (byte)(c & 0xFF) };          // 大端
+                        break;
+                    }
+                case 5: tail = new byte[] { CrcUtil.FcsOfAsciiString(hexStr) }; break;
+                default: return data;
+            }
+            byte[] result = new byte[len + tail.Length];
+            Array.Copy(data, 0, result, 0, len);
+            Array.Copy(tail, 0, result, len, tail.Length);
+            return result;
+        }
+
+        /// <summary>
         /// 应用显示方案（true=方案1，false=方案2）到接收区与发送区。
         /// 消除 plan1/plan2 在多处复制的字体/颜色赋值，避免极性反转 bug。
         /// </summary>
@@ -351,6 +384,9 @@ namespace O_ComTool_Pro
             tmp = app.Default.sendEncodeAscii == false ? radHexSend.Checked = true : radHexSend.Checked = false;
             tmp = app.Default.chkAutoCount == true ? chkAutoCount.Checked = true : chkAutoCount.Checked = false;
             tmp = app.Default.chkAppendNewLine == true ? chkNewLine.Checked = true : chkNewLine.Checked = false;
+            chkAppendCheck.Checked = app.Default.chkAppendCheck;
+            if (cmbCheckAlg.Items.Count > 0)
+                cmbCheckAlg.SelectedIndex = Math.Min(app.Default.cmbCheckAlgIndex, cmbCheckAlg.Items.Count - 1);
             tmp = app.Default.chkRepeatSend == true ? chkRepeatSend.Checked = true : chkRepeatSend.Checked = false;
             nudRepeatInterval.Value = app.Default.RepeatInterval;
 
@@ -568,6 +604,10 @@ namespace O_ComTool_Pro
             if (radHexSend.Checked)//十六进制发送
             {
                 byte[] bytesToWrite = ParseHexBytes(TempStr);
+                if (chkAppendCheck.Checked)
+                {
+                    bytesToWrite = AppendCheck(bytesToWrite, cmbCheckAlg.SelectedIndex, TempStr);
+                }
                 serialPort1.Write(bytesToWrite, 0, bytesToWrite.Length);
 
                 if (send_display_enable == true && chkAutoLine.Checked == true)
@@ -1248,6 +1288,8 @@ namespace O_ComTool_Pro
             // 发送设置
             app.Default.sendEncodeAscii = radAsciiSend.Checked == true ? true : false;
             app.Default.chkAppendNewLine = chkNewLine.Checked == true ? true : false;
+            app.Default.chkAppendCheck = chkAppendCheck.Checked;
+            app.Default.cmbCheckAlgIndex = cmbCheckAlg.SelectedIndex;
             app.Default.chkAutoCount = chkAutoCount.Checked == true ? true : false;
             app.Default.chkRepeatSend = chkRepeatSend.Checked == true ? true : false;
             app.Default.RepeatInterval = (int)nudRepeatInterval.Value;
@@ -1690,6 +1732,8 @@ namespace O_ComTool_Pro
                 // Send
                 BoolF("Send", "sendEncodeAscii", () => radAsciiSend.Checked, v => app.Default.sendEncodeAscii = v),
                 BoolF("Send", "chkAppendNewLine", () => chkNewLine.Checked, v => app.Default.chkAppendNewLine = v),
+                BoolF("Send", "chkAppendCheck", () => chkAppendCheck.Checked, v => app.Default.chkAppendCheck = v),
+                IntF("Send", "cmbCheckAlgIndex", () => cmbCheckAlg.SelectedIndex, v => app.Default.cmbCheckAlgIndex = v),
                 BoolF("Send", "chkAutoCount", () => chkAutoCount.Checked, v => app.Default.chkAutoCount = v),
                 BoolF("Send", "chkRepeatSend", () => chkRepeatSend.Checked, v => app.Default.chkRepeatSend = v),
                 IntF("Send", "RepeatInterval", () => (int)nudRepeatInterval.Value, v => app.Default.RepeatInterval = v),

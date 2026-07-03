@@ -39,6 +39,8 @@
             this.label10 = new System.Windows.Forms.Label();
             this.nudRepeatInterval = new System.Windows.Forms.NumericUpDown();
             this.chkAutoCount = new System.Windows.Forms.CheckBox();
+            this.chkAppendCheck = new System.Windows.Forms.CheckBox();
+            this.cmbCheckAlg = new System.Windows.Forms.ComboBox();
             this.radHexSend = new System.Windows.Forms.RadioButton();
             this.radAsciiSend = new System.Windows.Forms.RadioButton();
             this.gpdReceive = new System.Windows.Forms.GroupBox();
@@ -218,6 +220,8 @@
             this.gpdSend.Controls.Add(this.label10);
             this.gpdSend.Controls.Add(this.nudRepeatInterval);
             this.gpdSend.Controls.Add(this.chkAutoCount);
+            this.gpdSend.Controls.Add(this.chkAppendCheck);
+            this.gpdSend.Controls.Add(this.cmbCheckAlg);
             this.gpdSend.Controls.Add(this.radHexSend);
             this.gpdSend.Controls.Add(this.radAsciiSend);
             this.gpdSend.Cursor = System.Windows.Forms.Cursors.Arrow;
@@ -310,9 +314,35 @@
             this.chkAutoCount.Text = "自动计数";
             this.chkAutoCount.UseVisualStyleBackColor = true;
             this.chkAutoCount.CheckedChanged += new System.EventHandler(this.chkAutoCount_CheckedChanged);
-            // 
+            //
+            // chkAppendCheck
+            //
+            this.chkAppendCheck.AutoSize = true;
+            this.chkAppendCheck.Location = new System.Drawing.Point(9, 128);
+            this.chkAppendCheck.Name = "chkAppendCheck";
+            this.chkAppendCheck.Size = new System.Drawing.Size(36, 16);
+            this.chkAppendCheck.TabIndex = 10;
+            this.chkAppendCheck.Text = "校验";
+            this.chkAppendCheck.UseVisualStyleBackColor = true;
+            //
+            // cmbCheckAlg
+            //
+            this.cmbCheckAlg.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbCheckAlg.FormattingEnabled = true;
+            this.cmbCheckAlg.Items.AddRange(new object[] {
+            "累加和",
+            "XOR",
+            "LRC",
+            "CRC16-Modbus",
+            "CRC32",
+            "FCS"});
+            this.cmbCheckAlg.Location = new System.Drawing.Point(45, 126);
+            this.cmbCheckAlg.Name = "cmbCheckAlg";
+            this.cmbCheckAlg.Size = new System.Drawing.Size(75, 22);
+            this.cmbCheckAlg.TabIndex = 11;
+            //
             // radHexSend
-            // 
+            //
             this.radHexSend.AutoSize = true;
             this.radHexSend.Location = new System.Drawing.Point(81, 15);
             this.radHexSend.Name = "radHexSend";
@@ -1516,6 +1546,8 @@
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.NumericUpDown nudRepeatInterval;
         private System.Windows.Forms.CheckBox chkAutoCount;
+        private System.Windows.Forms.CheckBox chkAppendCheck;
+        private System.Windows.Forms.ComboBox cmbCheckAlg;
         private System.Windows.Forms.RadioButton radHexSend;
         private System.Windows.Forms.RadioButton radAsciiSend;
         private System.Windows.Forms.GroupBox gpdReceive;

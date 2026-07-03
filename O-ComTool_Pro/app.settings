@@ -41,6 +41,12 @@
     <Setting Name="chkAppendNewLine" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="chkAppendCheck" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="cmbCheckAlgIndex" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">3</Value>
+    </Setting>
     <Setting Name="chkRepeatSend" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
