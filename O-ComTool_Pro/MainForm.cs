@@ -265,25 +265,8 @@ namespace O_ComTool_Pro
 
             tbpQuick.Controls.Add(quicksend);
             quicksend_list.Add(quicksend);
-            
-        }
 
-        public void UpdateHightLight()
-        {
-            //rtbReceive.Settings.Keywords.Clear();
-            //rtbReceive.Settings.KeywordColor.Clear();
-            //for (int i = 0; i < hight_light_count; i++)
-            //{
-            //    rtbReceive.Settings.Keywords.Add(hight_light_key[i]);
-            //    rtbReceive.Settings.KeywordColor.Add(System.Drawing.ColorTranslator.FromHtml(hight_light_color[i]));
-            //}
-            //rtbReceive.CompileKeywords();
-            CompileKeywords();
         }
-
-        public short hight_light_count = 0;
-        public List<string> hight_light_key = new List<string>();
-        public List<string> hight_light_color = new List<string>();
 
         /// <summary>
         /// 加载上次关闭时的配置
@@ -382,23 +365,11 @@ namespace O_ComTool_Pro
                     load_file_path = app.Default.LoadFilePath;
                     ShowCurStatus(true, "文件加载成功");
                 }
-                else 
+                else
                 {
                     ShowCurStatus(false, "文件加载失败");
                 }
             }
-            // 高亮
-            //hight_light_count = app.Default.HigthLightKeyCount;
-
-            //hight_light_key.Clear();
-            //hight_light_color.Clear();
-            //for (int i = 0; i < hight_light_count; i++)
-            //{
-            //    hight_light_key.Add(app.Default.HightLightName[i]);
-            //    hight_light_color.Add(app.Default.HightLightColor[i]);
-            //}
-
-            //UpdateHightLight();
 
             //highlight
             hl_red_regex_str = app.Default.HighLightRed;
@@ -789,75 +760,6 @@ namespace O_ComTool_Pro
                     // 磁盘 IO 异常，忽略以免拖垮接收
                 }
             }
-        }
-
-        private string m_strKeywords = "";//正则表达式
-        List<Color> m_color = new List<Color>();
-        public void CompileKeywords()
-        {
-            m_strKeywords = "";
-            m_color.Clear();
-            for (int i = 0; i < hight_light_count; i++)
-            {
-                string strKeyword = hight_light_key[i];
-
-                if (i == hight_light_count - 1)
-                    m_strKeywords += strKeyword;
-                else
-                    m_strKeywords += strKeyword + "|";
-            }
-
-            for (int i = 0; i < hight_light_color.Count; i++)
-            {
-                m_color.Add(System.Drawing.ColorTranslator.FromHtml(hight_light_color[i]));
-            }
-        }
-
-        static int last_rtb_len = 0;
-        void KeyWordHightLight(RichTextBox rtb, string str_line)
-        {
-            int m_nLineStart = 0;
-            int m_nLineLength = 0;
-
-            str_line = str_line.Replace("\r\n", "\n");
-            if (hight_light_enable == false) return;
-
-            // Process this line.
-            // Save the position and make the whole line black
-            int nPosition = rtb.SelectionStart;
-
-            //m_nLineStart = rtb.Text.Length - str_line.Length;
-            m_nLineStart = last_rtb_len;
-            if (m_nLineStart < 0) m_nLineStart = 0;
-
-            m_nLineLength = str_line.Length;
-
-            rtb.SelectionStart = m_nLineStart;
-            rtb.SelectionLength = m_nLineLength;
-            rtb.SelectionColor = cur_color;
-
-            // Process the keywords
-            Regex regKeywords = new Regex(m_strKeywords, RegexOptions.Compiled);
-            Match regMatch;
-            for (regMatch = regKeywords.Match(str_line); regMatch.Success; regMatch = regMatch.NextMatch())
-            {
-                // Process the words
-                int nStart = m_nLineStart + regMatch.Index;
-                int nLenght = regMatch.Length;
-                rtb.SelectionStart = nStart;
-                rtb.SelectionLength = nLenght;
-                for (int i = 0; i < m_color.Count; i++)
-                {
-                    if (regMatch.Value == hight_light_key[i])
-                    {
-                        rtb.SelectionColor = m_color[i];
-                    }
-                }
-            }
-            rtb.SelectionStart = nPosition;
-            rtb.SelectionLength = 0;
-            rtb.SelectionColor = cur_color;
-            //last_rtb_len = rtb.Text.Length;
         }
 
         private void serialPort1_DataReceived(object sender, SerialDataReceivedEventArgs e)
@@ -1687,15 +1589,8 @@ namespace O_ComTool_Pro
                 cmstbHexFormat.Enabled = false;
                 cmstbCalcLength.Enabled = false;
             }
-            //剪切板没有文本内容时，粘贴菜单禁用
-            if (Clipboard.ContainsText())
-            {
-                cmsPaste.Enabled = true;
-            }
-            else
-            {
-                cmsPaste.Enabled = false;
-            }
+            // 注意：文本框右键菜单（contextMenuStrip3）没有粘贴项；
+            // 此前误改的是 FCTB 菜单（contextMenuStrip2）的 cmsPaste，已移除该错误逻辑。
         }
 
         private void cmstbSelectAll_Click(object sender, EventArgs e)
